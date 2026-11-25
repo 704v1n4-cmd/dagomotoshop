@@ -36,7 +36,7 @@ window.DMS_DONNEES = {
       specs: [['125 cc', 'Cylindrée'], ['1re', 'Génération'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
       description: "Yamaha Cygnus X de 1re génération, importé de Taïwan et révisé au garage. Prix, année et kilométrage sur demande." },
     { id: 'cygnus-4', cat: 'scooters', nom: 'Yamaha Cygnus 4', detail: '125 cc · Occasion Taïwan', stock: null, cylindree: 125, prix: null,
-      img: 'img/scooter.png', photoProvisoire: true,
+      img: 'img/cygnus-4.png',
       specs: [['125 cc', 'Cylindrée'], ['4e', 'Génération'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
       description: "Yamaha Cygnus X de 4e génération, importé de Taïwan et révisé au garage. Prix, année et kilométrage sur demande." },
     { id: 'rs-zero', cat: 'scooters', nom: 'Yamaha RS Zero', detail: '100 cc · Occasion Taïwan', stock: null, cylindree: 100, prix: null,
