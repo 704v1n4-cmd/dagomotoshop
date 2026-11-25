@@ -13,9 +13,9 @@ window.DMS_DONNEES = {
   },
   codesPromo: { DAGO5: 0.05 },        // code : remise (0.05 = -5 %)
   categories: [
-    { id: 'scooters', nom: 'Scooters' },
-    { id: 'pieces', nom: 'Pièces' },
-    { id: 'accessoires', nom: 'Accessoires' }
+    { id: 'scooters', nom: 'Scooters', icone: 'scooter' },
+    { id: 'pieces', nom: 'Pièces', icone: 'cle' },
+    { id: 'accessoires', nom: 'Accessoires', icone: 'casque' }
   ],
   produits: [
     { id: 'scooter-125', cat: 'scooters', nom: 'Scooter 125 cc', detail: 'Occasion Taïwan · 2019', prix: 3800000, ancienPrix: 4200000,
