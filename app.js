@@ -20,12 +20,12 @@
   let recentes = store.get('recentes', []);
   /* Annonces de pièces entre particuliers. En démo : stockées sur ce téléphone ; avec Firebase : base partagée. */
   let annonces = store.get('annonces', null) || [];
-  D.annoncesDemo.forEach((x) => { const y = annonces.find((z) => z.id === x.id); if (!y) annonces.push(Object.assign({}, x)); else if (!y.vendeurId) y.vendeurId = x.vendeurId; });
+  D.annoncesDemo.forEach((x) => { const y = annonces.find((z) => z.id === x.id); if (!y) annonces.push(Object.assign({}, x)); else { if (!y.vendeurId) y.vendeurId = x.vendeurId; if (!y.groupe) { y.groupe = x.groupe; y.piece = x.piece; } } });
   /* Vendeurs : pseudonyme, ventes et notes laissées par les acheteurs (jamais de nom ni de numéro affiché). */
   let vendeurs = Object.assign(JSON.parse(JSON.stringify(D.vendeursDemo)), store.get('vendeurs', {}));
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', notes: {}, vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+    paiement: 'mvola', notes: {}, groupe: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); };
 
   /* ---------- Outils ---------- */
@@ -38,7 +38,7 @@
   const acompteDe = (prix) => Math.round(prix * PP.acompte / 100) * 100;
   const netVendeur = (prix) => Math.round(prix * (1 - PP.commission) / 100) * 100;
   const deAnnonce = (x) => ({ id: x.id, cat: 'occasion', nom: x.titre, detail: x.compat + ' · ' + x.etatPiece, prix: x.prix, stock: x.etat === 'en_ligne' ? 1 : 0,
-    img: (x.photos && x.photos[0]) || x.photo, photos: x.photos || [x.photo], rond: /^img\//.test((x.photos && x.photos[0]) || x.photo), photoReelle: !/^img\//.test((x.photos && x.photos[0]) || x.photo), particulier: true, vendeurId: x.vendeurId, etatAnnonce: x.etat, description: x.description || 'Pièce proposée par un particulier.' });
+    img: (x.photos && x.photos[0]) || x.photo, photos: x.photos || [x.photo], rond: /^img\//.test((x.photos && x.photos[0]) || x.photo), photoReelle: !/^img\//.test((x.photos && x.photos[0]) || x.photo), particulier: true, groupe: x.groupe || 'Autres', piece: x.piece || '', vendeurId: x.vendeurId, etatAnnonce: x.etat, description: x.description || 'Pièce proposée par un particulier.' });
   const TAGS = { conforme: 'Conforme à la photo', etat: 'État comme annoncé', prix: 'Bon prix' };
   const statV = (vid) => {
     const v = vendeurs[vid]; if (!v) return null;
@@ -130,6 +130,7 @@
     const q = ui.recherche.trim().toLowerCase();
     let l = tous().filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
     const rang = (p) => { const s = p.particulier && statV(p.vendeurId); return s ? (s.top ? 2 : 0) + s.moy / 10 : 0; };
+    if (!q && ui.cat === 'occasion' && ui.groupe) l = l.filter((p) => p.groupe === ui.groupe);
     l = l.slice().sort((a, b) => { if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
   };
@@ -148,6 +149,7 @@
     <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
       ${meilleursHtml()}
+      ${famillesHtml()}
       <span class="ligne" style="gap:14px"><a href="#vendre" class="petit" style="font-weight:600;color:var(--ink);text-decoration:underline;min-height:40px;display:flex;align-items:center">Vendre une pièce</a><a href="#conditions" class="petit" style="text-decoration:underline;min-height:40px;display:flex;align-items:center">Conditions</a></span></div>` : ''}
     ${ui.recherche || ui.cat === 'occasion' ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'GP', 'SYM Jet', 'VJR', 'PGO']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--sel);color:var(--sel-txt);border-color:var(--sel)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
@@ -184,7 +186,7 @@
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
         <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
         ${p.stock != null && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
-      ${p.particulier ? `<div class="carte col avert" style="gap:8px"><span class="badge part" style="align-self:flex-start">${ic('etiquette', 14)}Vendu par un particulier · en l'état</span>
+      ${p.particulier ? `<div class="carte col avert" style="gap:8px"><span class="ligne" style="gap:6px;flex-wrap:wrap"><span class="badge part">${ic('etiquette', 14)}Vendu par un particulier · en l'état</span><span class="badge part" style="background:var(--bg)">${esc(p.groupe)}</span></span>
         <p class="petit" style="margin:0;font-size:13px;line-height:1.5">${B.nom} sert seulement d'intermédiaire : la boutique ne contrôle pas et ne garantit pas cette pièce. Vous l'examinez au comptoir avant de payer le reste ; si elle ne vous convient pas, vous la refusez et votre acompte est remboursé.</p>
         <a href="#conditions" class="petit" style="text-decoration:underline;min-height:36px;display:flex;align-items:center">Conditions de vente entre particuliers</a></div>${blocVendeur(p)}` : ''}
       ${choix ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">${choix.titre}</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? choix.erreur : choix.aide}</span></div>
@@ -374,7 +376,10 @@
         ? `<div class="emplacement plein"><img src="${v.photos[k]}" alt="${t}"><span class="etiq">${k + 1}. ${t}</span><button type="button" class="rond" data-a="photo-suppr" data-id="${k}" aria-label="Supprimer la photo ${k + 1}">${ic('moins', 16)}</button></div>`
         : `<label class="emplacement${k < 3 ? ' requis' : ''}" for="v-photo-${k}">${ic(i, 26)}<b>${k + 1}. ${t}</b><span class="petit">${d}</span><span class="oblig">${k < 3 ? 'Obligatoire' : 'Facultatif'}</span></label>`).join('')}</div>
       ${EMPLACEMENTS.map((_, k) => `<input id="v-photo-${k}" type="file" accept="image/*" data-in="v-photo" data-slot="${k}" class="sr">`).join('')}</div>
-      ${champ('v-titre', 'Nom de la pièce', `<input id="v-titre" class="saisie" data-in="v-titre" value="${esc(v.titre)}" placeholder="Ex. Carburateur, rétroviseur gauche" maxlength="60">`)}
+      ${champ('v-piece', 'Type de pièce', `<select id="v-piece" class="saisie" data-in="v-piece"><option value=""${v.piece ? '' : ' selected'} disabled>Choisissez dans la liste</option>
+        ${Object.entries(D.piecesListe).map(([g, l]) => `<optgroup label="${esc(g)}">${l.map((n) => `<option value="${esc(g + '|' + n)}"${v.piece === g + '|' + n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}
+        <optgroup label="Pas dans la liste"><option value="Autres|Autres"${v.piece === 'Autres|Autres' ? ' selected' : ''}>Autres</option></optgroup></select>`, 'La pièce sera rangée dans cette famille pour que les acheteurs la trouvent.')}
+      ${champ('v-titre', v.piece === 'Autres|Autres' ? 'Précisez la pièce' : 'Titre de l’annonce', `<input id="v-titre" class="saisie" data-in="v-titre" value="${esc(v.titre)}" placeholder="${v.piece === 'Autres|Autres' ? 'Ex. Support de plaque' : 'Ex. Carburateur d’origine'}" maxlength="60">`)}
       ${champ('v-compat', 'Compatible avec', `<input id="v-compat" class="saisie" data-in="v-compat" value="${esc(v.compat)}" placeholder="Ex. Kymco GP 125" maxlength="60">`)}
       ${champ('v-etat', 'État', `<select id="v-etat" class="saisie" data-in="v-etat">${ETATS_PIECE.map((e) => `<option${v.etatPiece === e ? ' selected' : ''}>${e}</option>`).join('')}</select>`)}
       ${champ('v-desc', 'Description <span class="petit">(facultatif)</span>', `<textarea id="v-desc" class="saisie" data-in="v-desc" rows="3" maxlength="300" placeholder="Défauts, kilométrage du scooter d’origine…">${esc(v.desc)}</textarea>`)}
@@ -432,6 +437,11 @@
       <h2>6. Pièce non vendue</h2><p>Si l’acheteur refuse la pièce ou ne vient pas, le vendeur dispose de ${PP.reprise} pour la reprendre au magasin ou demander sa remise en vente.</p>
       <h2>7. Retrait</h2><p>Toutes les pièces vendues entre particuliers se récupèrent au magasin ${esc(B.nom)}, ${esc(B.ville)}. Aucune livraison.</p></div></div>`;
 
+  const famillesHtml = () => {
+    const g = [...new Set(annonces.filter((x) => x.etat === 'en_ligne').map((x) => x.groupe || 'Autres'))].sort((x, y) => (x === 'Autres') - (y === 'Autres') || x.localeCompare(y));
+    if (!g.length) return '';
+    return `<div class="defile" aria-label="Familles de pièces" style="gap:6px">${['', ...g].map((n) => `<button class="puce" style="height:36px" aria-pressed="${ui.groupe === n}" data-a="groupe" data-id="${esc(n)}">${n ? esc(n) : 'Toutes'}</button>`).join('')}</div>`;
+  };
   const meilleursHtml = () => {
     const top = Object.keys(vendeurs).map(statV).filter((s) => s && s.top && annonces.some((x) => x.vendeurId === s.id && x.etat === 'en_ligne')).sort((a, b) => b.moy - a.moy || b.ventes - a.ventes);
     if (!top.length) return '';
@@ -594,6 +604,7 @@
     vendue(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'vendue'; if (vendeurs[x.vendeurId]) vendeurs[x.vendeurId].ventes++; sauver(); toast('Vente enregistrée : payez le vendeur ' + ar(netVendeur(x.prix))); rafraichir(); } },
     'remettre-en-vente'(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'en_ligne'; delete x.commande; sauver(); toast('Pièce remise en vente'); rafraichir(); } },
     'retirer-annonce'(id) { const x = annonces.find((y) => y.id === id); if (x && (x.etat === 'attente' || x.etat === 'en_ligne')) { x.etat = 'retiree'; sauver(); toast('Annonce retirée'); rafraichir(); } },
+    groupe(n) { ui.groupe = n || ''; rafraichir(); },
     'note-etoile'(v) { const [cle, n] = v.split('|'); ui.notes[cle] = Object.assign(ui.notes[cle] || { tags: [] }, { n: +n }); rafraichir(); },
     'note-tag'(v) { const [cle, t] = v.split('|'); const o = ui.notes[cle] = ui.notes[cle] || { tags: [] }; o.tags = o.tags.includes(t) ? o.tags.filter((x) => x !== t) : o.tags.concat(t); rafraichir(); },
     'note-envoyer'(cle) {
@@ -623,6 +634,8 @@
     if (k === 'promo') ui.promoSaisie = e.target.value;
     if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
     if (k === 'email') ui.email = e.target.value;
+    if (k === 'v-piece') { ui.vente.piece = e.target.value; const n = e.target.value.split('|')[1]; if (!ui.vente.titre || ui.vente.titreAuto) { ui.vente.titre = n === 'Autres' ? '' : n; ui.vente.titreAuto = true; } ui.vente.erreur = ''; rafraichir(); return; }
+    if (k === 'v-titre') ui.vente.titreAuto = false;
     if (k && k.startsWith('v-') && k !== 'v-photo') {
       const champ = { 'v-titre': 'titre', 'v-compat': 'compat', 'v-etat': 'etatPiece', 'v-desc': 'desc', 'v-prix': 'prix', 'v-tel': 'tel' }[k];
       if (k === 'v-prix') { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 9); const n = document.getElementById('v-net'); if (n) n.innerHTML = netHtml(+e.target.value || 0); }
@@ -664,14 +677,14 @@
     if (f === 'vendre') {
       const v = ui.vente, chiffres = (v.tel || client.tel || '').replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
       const nbP = [0, 1, 2].filter((k) => v.photos[k]).length;
-      const err = nbP < 3 ? `Ajoutez les 3 photos obligatoires (${nbP}/3) : vue d’ensemble, références, défauts.` : v.titre.trim().length < 3 ? 'Indiquez le nom de la pièce.' : !v.compat.trim() ? 'Indiquez avec quels modèles la pièce est compatible.'
+      const err = !v.piece ? 'Choisissez le type de pièce dans la liste (ou « Autres »).' : nbP < 3 ? `Ajoutez les 3 photos obligatoires (${nbP}/3) : vue d’ensemble, références, défauts.` : v.titre.trim().length < 3 ? 'Indiquez le nom de la pièce.' : !v.compat.trim() ? 'Indiquez avec quels modèles la pièce est compatible.'
         : !(+v.prix >= 1000) ? 'Indiquez un prix d’au moins 1 000 Ar.' : !/^3[2-47-8]\d{7}$/.test(chiffres) ? 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.' : !v.accepte ? 'Acceptez les conditions pour envoyer l’annonce.' : '';
       if (err) { v.erreur = err; rafraichir(); const a = document.querySelector('[role=alert]'); if (a) a.scrollIntoView({ block: 'center' }); return; }
       const tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); client.tel = client.tel || tel;
-      annonces.push({ id: 'occ-' + Date.now().toString(36), etat: 'attente', titre: v.titre.trim(), compat: v.compat.trim(), etatPiece: v.etatPiece, prix: +v.prix, description: v.desc.trim(), photos: v.photos.filter(Boolean), photo: v.photos[0],
+      annonces.push({ id: 'occ-' + Date.now().toString(36), etat: 'attente', titre: v.titre.trim(), groupe: v.piece.split('|')[0], piece: v.piece.split('|')[1], compat: v.compat.trim(), etatPiece: v.etatPiece, prix: +v.prix, description: v.desc.trim(), photos: v.photos.filter(Boolean), photo: v.photos[0],
         vendeur: { nom: client.nom || 'Vendeur', tel }, vendeurId: 'moi', proprio: true, creeLe: Date.now() });
       if (!vendeurs.moi) vendeurs.moi = { alias: 'Vendeur n°' + String(50 + Math.floor(Math.random() * 49)), ventes: 0, notes: [], tags: {} };
-      ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], accepte: false, erreur: '' };
+      ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' };
       sauver(); toast('Annonce envoyée à la boutique'); aller('annonces'); return;
     }
     if (f === 'recherche') { ui.recherche = e.target.q.value; memoRecherche(ui.recherche); aller('catalogue'); }

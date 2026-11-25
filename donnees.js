@@ -24,6 +24,20 @@ window.DMS_DONNEES = {
   /* Vente de pièces entre particuliers : la boutique sert d'intermédiaire, retrait toujours au magasin. */
   particuliers: { commission: 0.10, acompte: 0.10, delaiDepot: '48 h', retrait: '7 jours', reprise: '7 jours' },
   /* Annonces d'exemple pour la démonstration (remplacées par les vraies annonces une fois Firebase branché). */
+  /* Liste des pièces que les particuliers peuvent vendre, par famille. « Autres » si la pièce n'y est pas. */
+  piecesListe: {
+    'Moteur': ['Culasse', 'Cylindre / piston', 'Segments', 'Soupapes', 'Arbre à cames', 'Joint de culasse', 'Pochette de joints', 'Vilebrequin', 'Bielle', 'Carter moteur', 'Pompe à huile', 'Démarreur', 'Kick (pédale de démarrage)', 'Moteur complet'],
+    'Alimentation et admission': ['Carburateur', 'Injecteur', 'Corps de papillon', 'Pompe à essence', 'Robinet d’essence', 'Réservoir', 'Filtre à air', 'Boîte à air', 'Pipe d’admission', 'Câble d’accélérateur'],
+    'Transmission': ['Courroie', 'Variateur', 'Galets de variateur', 'Embrayage', 'Cloche d’embrayage', 'Poulie / flasque', 'Ressort de poussée', 'Kit chaîne (chaîne, pignon, couronne)', 'Boîte de vitesses / réducteur'],
+    'Freinage': ['Plaquettes de frein', 'Disque de frein', 'Étrier de frein', 'Maître-cylindre', 'Mâchoires / garnitures', 'Tambour de frein', 'Câble de frein', 'Durite de frein', 'Levier de frein'],
+    'Roues et pneus': ['Jante avant', 'Jante arrière', 'Pneu', 'Chambre à air', 'Roulements de roue', 'Axe de roue', 'Roue complète'],
+    'Suspension et direction': ['Fourche / tube de fourche', 'Amortisseur arrière', 'Guidon', 'Té de fourche', 'Roulements de direction', 'Poignées', 'Rétroviseurs'],
+    'Électricité et allumage': ['Batterie', 'Bougie', 'Bobine d’allumage', 'Antiparasite', 'CDI / boîtier électronique', 'Régulateur / redresseur', 'Stator / alternateur', 'Faisceau électrique', 'Neiman / contacteur à clé', 'Commodo (interrupteurs guidon)', 'Klaxon', 'Relais de clignotant', 'Fusibles'],
+    'Éclairage et compteur': ['Phare avant', 'Feu arrière', 'Clignotants', 'Ampoules / LED', 'Compteur', 'Câble de compteur'],
+    'Échappement et refroidissement': ['Pot d’échappement', 'Collecteur', 'Silencieux', 'Radiateur', 'Ventilateur', 'Durite de refroidissement', 'Thermostat'],
+    'Carrosserie et selle': ['Carénage avant', 'Carénage latéral', 'Tablier / plancher', 'Garde-boue avant', 'Garde-boue arrière', 'Selle', 'Coffre sous selle', 'Top case', 'Porte-bagages', 'Béquille centrale', 'Béquille latérale', 'Repose-pieds', 'Bouchon de réservoir', 'Pare-brise / bulle', 'Rétroviseur seul'],
+    'Équipement et accessoires': ['Antivol', 'Housse', 'Support téléphone', 'Outillage']
+  },
   /* Vendeurs particuliers : seulement un pseudonyme public, jamais de nom ni de numéro. notes = étoiles données par les acheteurs. */
   vendeursDemo: {
     v27: { alias: 'Vendeur n°27', ventes: 14, notes: [5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5, 4], tags: { conforme: 11, etat: 10, prix: 8 } },
@@ -31,13 +45,13 @@ window.DMS_DONNEES = {
     v41: { alias: 'Vendeur n°41', ventes: 2, notes: [4, 3], tags: { conforme: 1, etat: 1, prix: 2 } }
   },
   annoncesDemo: [
-    { id: 'occ-demo1', etat: 'en_ligne', titre: 'Rétroviseurs Cygnus (paire)', compat: 'Yamaha Cygnus 1 à 4', etatPiece: 'Bon état', prix: 25000,
+    { id: 'occ-demo1', etat: 'en_ligne', groupe: 'Suspension et direction', piece: 'Rétroviseurs', titre: 'Rétroviseurs Cygnus (paire)', compat: 'Yamaha Cygnus 1 à 4', etatPiece: 'Bon état', prix: 25000,
       description: 'Paire de rétroviseurs d\u2019origine, quelques rayures sur les coques, verres intacts.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 01' }, vendeurId: 'v41', demo: true },
-    { id: 'occ-demo2', etat: 'en_ligne', titre: 'Carburateur GP 125', compat: 'Kymco GP 125 carburateur', etatPiece: 'Très bon état', prix: 60000,
+    { id: 'occ-demo2', etat: 'en_ligne', groupe: 'Alimentation et admission', piece: 'Carburateur', titre: 'Carburateur GP 125', compat: 'Kymco GP 125 carburateur', etatPiece: 'Très bon état', prix: 60000,
       description: 'Carburateur démonté d\u2019un GP 125, nettoyé.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 02' }, vendeurId: 'v27', demo: true },
-    { id: 'occ-demo3', etat: 'en_ligne', titre: 'Phare avant Cygnus 3', compat: 'Yamaha Cygnus 3', etatPiece: 'Bon état', prix: 45000,
+    { id: 'occ-demo3', etat: 'en_ligne', groupe: 'Éclairage et compteur', piece: 'Phare avant', titre: 'Phare avant Cygnus 3', compat: 'Yamaha Cygnus 3', etatPiece: 'Bon état', prix: 45000,
       description: 'Bloc optique complet, une petite fêlure sur un support de fixation.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 02' }, vendeurId: 'v27', demo: true },
-    { id: 'occ-demo4', etat: 'en_ligne', titre: 'Selle G6', compat: 'Kymco G6 125/150', etatPiece: 'Très bon état', prix: 55000,
+    { id: 'occ-demo4', etat: 'en_ligne', groupe: 'Carrosserie et selle', piece: 'Selle', titre: 'Selle G6', compat: 'Kymco G6 125/150', etatPiece: 'Très bon état', prix: 55000,
       description: 'Selle d\u2019origine sans déchirure.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 03' }, vendeurId: 'v08', demo: true }
   ],
   produits: [
