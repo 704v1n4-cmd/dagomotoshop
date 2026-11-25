@@ -6,7 +6,8 @@ Application web installable (PWA) : elle s'ouvre dans le navigateur et s'install
 
 - Accueil, catalogue (3 rayons, recherche, tri par prix), fiche produit, favoris.
 - Panier : quantités, retrait boutique ou livraison Tana, code promo (`DAGO5` pour l'essai), total en Ariary et en Fmg.
-- Connexion par numéro de téléphone avec un code à 6 chiffres. **En démo, le code est toujours 123456.**
+- Connexion avec **Facebook**, **Google** ou **un lien reçu par e-mail** (en démo, les boutons connectent sans vrai compte).
+- Le **numéro de téléphone** est demandé au paiement pour que la boutique rappelle le client, sans code SMS.
 - Paiement (MVola, Orange Money ou espèces), confirmation avec code de retrait, suivi de commande en 4 étapes, compte client avec carte fidélité.
 - Fonctionne hors connexion une fois installée.
 
@@ -46,7 +47,12 @@ Photos : sur fond blanc ou gris clair uni, sans ombre au sol, puis détourées (
 Pour que **la boutique reçoive les commandes** et que le catalogue se mette à jour sans republier :
 1. Va sur console.firebase.google.com avec ton compte Google → « Créer un projet » → « Dagomotoshop ».
 2. Ajoute une « application Web » et copie le bloc `firebaseConfig` qui s'affiche.
-3. Active **Firestore Database** (produits, commandes) et **Authentication → Téléphone** (vrais SMS de connexion).
+3. Active **Firestore Database** (produits, commandes) et, dans **Authentication**, les méthodes **Google**, **Facebook** et **Adresse e-mail / Lien par e-mail**. Pour Facebook, il faut aussi créer une app sur developers.facebook.com.
 4. Envoie-moi le bloc `firebaseConfig` : je branche l'app dessus et je crée l'espace gérant (ajouter un produit, changer un prix, faire avancer le statut d'une commande, qui enverra la notification au client).
 
-Note : l'envoi de SMS par Firebase est gratuit jusqu'à un certain volume, puis payant à l'unité. On pourra aussi garder la connexion par code WhatsApp si c'est moins cher.
+Note : Facebook, Google et l'e-mail sont gratuits. La vérification par SMS est possible plus tard (environ 0,31 $ par SMS à Madagascar, forfait Blaze), si des fausses réservations apparaissent.
+
+## En ligne
+
+- Dépôt GitHub : https://github.com/704v1n4-cmd/dagomotoshop (branche `main`)
+- App en ligne (GitHub Pages) : https://704v1n4-cmd.github.io/dagomotoshop/

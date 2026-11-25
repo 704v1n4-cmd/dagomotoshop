@@ -11,6 +11,9 @@ window.DMS_DONNEES = {
     fraisLivraison: 5000,             // livraison Tana, en Ariary
     delaiRetrait: 'sous 3 jours'
   },
+  /* Colle ici le bloc firebaseConfig de ta console Firebase pour activer Facebook, Google et l'e-mail.
+     Tant qu'il vaut null, l'app est en démonstration. */
+  firebaseConfig: null,
   codesPromo: { DAGO5: 0.05 },        // code : remise (0.05 = -5 %)
   categories: [
     { id: 'scooters', nom: 'Scooters', icone: 'scooter' },

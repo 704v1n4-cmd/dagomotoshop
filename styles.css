@@ -138,3 +138,7 @@ label.lib{font-size:13px;font-weight:500}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 @media (min-width:520px){.app{box-shadow:0 0 0 1px rgba(0,0,0,.04),0 20px 60px rgba(0,0,0,.08)}}
 .nav[hidden]{display:none}
+.btn.fb{background:#1877F2;color:#fff;height:58px;font-size:16px}
+.btn.google{gap:10px;height:54px;font-size:15px;font-weight:600}
+.ou{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:2px 0}
+.ou::before,.ou::after{content:"";flex:1;height:1px;background:var(--line)}

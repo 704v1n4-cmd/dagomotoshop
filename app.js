@@ -18,7 +18,7 @@
   let commandes = store.get('commandes', []);
   let favoris = store.get('favoris', []);
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', etapeCnx: 'tel', tel: '', telErreur: '', codeErreur: '', retour: 'compte' };
+    paiement: 'mvola', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); };
 
   /* ---------- Outils ---------- */
@@ -152,29 +152,30 @@
     <div class="basbar transp"><button class="btn" data-a="commander">Commander · <span class="nw">${ar(t.total)}</span></button></div>`;
   };
 
-  V.connexion = () => {
-    const tel = ui.etapeCnx === 'tel';
-    return `<div class="ecran" style="padding-top:0">
-    <div class="hero" style="height:250px"><a href="#${ui.retour === 'paiement' ? 'panier' : 'compte'}" class="rond" style="position:relative;background:rgba(255,255,255,.12);color:#fff" aria-label="Retour">${ic('retour')}</a>
-      <img src="img/logo.jpg" alt="Dagomotoshop" style="position:relative;width:64px;height:64px;border-radius:14px;margin-top:16px">
+  const LOGO_FB = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.02 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.09 24 18.09 24 12.07z"/></svg>';
+  const LOGO_G = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+  const DEMO = !D.firebaseConfig;
+  V.connexion = () => `<div class="ecran" style="padding-top:0">
+    <div class="hero" style="height:240px"><a href="#${ui.retour === 'paiement' ? 'panier' : 'compte'}" class="rond" style="position:relative;background:rgba(255,255,255,.12);color:#fff" aria-label="Retour">${ic('retour')}</a>
+      <img src="img/logo.jpg" alt="Dagomotoshop" style="position:relative;width:60px;height:60px;border-radius:14px;margin-top:14px">
       <p style="position:relative;color:#fff;font-weight:700;font-size:22px;line-height:1.2;max-width:210px;margin:12px 0 0">${ui.retour === 'paiement' ? 'Plus qu’une étape avant votre <span style="color:var(--lime)">réservation.</span>' : 'Retrouvez vos <span style="color:var(--lime)">commandes.</span>'}</p></div>
-    <img src="img/scooter.png" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(110px + env(safe-area-inset-top));width:180px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
-    <div class="dessus" style="gap:14px;padding-top:22px">
-    ${tel ? `<div class="col" style="gap:4px"><h1 class="h2" style="font-size:19px">Connexion par téléphone</h1><span class="petit" style="font-size:13px">Pas de mot de passe : vous recevez un code par SMS.</span></div>
-      <form class="col" style="gap:6px" data-form="tel"><label class="lib" for="tel">Numéro de téléphone</label>
-      <div class="tel"><span><svg width="20" height="14" viewBox="0 0 30 20" aria-hidden="true"><rect width="10" height="20" fill="#fff"/><rect x="10" width="20" height="10" fill="#FC3D32"/><rect x="10" y="10" width="20" height="10" fill="#007E3A"/><rect x=".5" y=".5" width="29" height="19" fill="none" stroke="#E2E5DF"/></svg>+261</span>
-      <input id="tel" type="tel" inputmode="numeric" autocomplete="tel-national" data-in="tel" value="${esc(ui.tel)}" placeholder="34 00 000 00" aria-describedby="tel-aide"></div>
-      <span id="tel-aide" class="petit" style="color:${ui.telErreur ? 'var(--err)' : 'var(--muted)'}">${esc(ui.telErreur || 'Telma, Orange ou Airtel. Le même numéro peut servir pour MVola ou Orange Money.')}</span>
-      <button class="btn" style="margin-top:6px">Recevoir le code</button></form>`
-    : `<div class="col" style="gap:4px"><h1 class="h2" style="font-size:19px">Entrez le code reçu</h1>
-      <span class="petit" style="font-size:13px">Code à 6 chiffres envoyé au <b style="color:var(--ink)">+261 ${esc(ui.tel)}</b>. <button data-a="changer-tel" style="font-weight:600;text-decoration:underline;font-size:13px;min-height:24px">Modifier</button></span></div>
-      <form class="col" style="gap:10px" data-form="code"><div class="code" role="group" aria-label="Code de vérification">${[1, 2, 3, 4, 5, 6].map((n) => `<input inputmode="numeric" maxlength="1" autocomplete="${n === 1 ? 'one-time-code' : 'off'}" data-in="code" aria-label="Chiffre ${n}">`).join('')}</div>
-      <span class="petit" style="color:var(--err)" role="status">${esc(ui.codeErreur)}</span>
-      <p class="demo" style="margin:0">Version de démonstration : le code est <b>123456</b>. L'envoi de vrais SMS arrive avec Firebase.</p>
-      <button class="btn">Vérifier et continuer</button></form>`}
-    <p class="petit" style="text-align:center;font-size:11px;margin:4px 0 0">En continuant, vous acceptez les conditions de vente de ${B.nom}.</p>
+    <img src="img/scooter.png" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(100px + env(safe-area-inset-top));width:176px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
+    <div class="dessus" style="gap:12px;padding-top:22px">
+      <div class="col" style="gap:4px"><h1 class="h2" style="font-size:20px">Connectez-vous</h1><span class="petit" style="font-size:13px">En un clic, sans mot de passe.</span></div>
+      <button class="btn fb" data-a="cnx" data-id="facebook">${LOGO_FB}Continuer avec Facebook</button>
+      <button class="btn clair google" data-a="cnx" data-id="google">${LOGO_G}Continuer avec Google</button>
+      <div class="ou"><span>ou par e-mail</span></div>
+      ${ui.emailEnvoye ? `<div class="carte col" style="gap:10px"><div class="ligne" style="gap:10px;align-items:flex-start"><span class="rond lime" style="width:36px;height:36px">${ic('check', 18)}</span>
+        <span style="font-size:14px">Lien envoyé à <b>${esc(ui.emailEnvoye)}</b>. Ouvrez votre boîte mail et touchez le lien pour vous connecter.</span></div>
+        ${DEMO ? `<button class="btn" data-a="cnx" data-id="email" style="height:48px;font-size:15px">Démo : ouvrir le lien</button>` : ''}
+        <button data-a="email-autre" class="petit" style="min-height:40px;font-size:13px;font-weight:600;text-decoration:underline;color:var(--ink)">Utiliser une autre adresse</button></div>`
+      : `<form class="col" style="gap:6px" data-form="email" novalidate><label class="lib" for="email">Adresse e-mail</label>
+        <input id="email" class="saisie" type="email" inputmode="email" autocomplete="email" data-in="email" value="${esc(ui.email)}" placeholder="nom@exemple.com" aria-describedby="email-aide">
+        <span id="email-aide" class="petit" style="color:${ui.emailErreur ? 'var(--err)' : 'var(--muted)'}">${esc(ui.emailErreur || 'Nous vous envoyons un lien de connexion, rien à retenir.')}</span>
+        <button class="btn clair" style="margin-top:4px">Recevoir le lien de connexion</button></form>`}
+      ${DEMO ? '<p class="demo" style="margin:0">Version de démonstration : les boutons vous connectent sans vrai compte. Facebook, Google et l’e-mail fonctionneront dès que Firebase sera branché.</p>' : ''}
+      <p class="petit" style="text-align:center;font-size:11px;margin:2px 0 0">En continuant, vous acceptez les conditions de vente de ${B.nom}.</p>
     </div></div>`;
-  };
 
   const notesPaiement = { mvola: 'Vous recevrez une demande de paiement MVola sur votre téléphone après confirmation.', orange: 'Vous recevrez une demande de paiement Orange Money sur votre téléphone après confirmation.', especes: 'Vous payez en espèces à la boutique, au moment du retrait.' };
   V.paiement = () => {
@@ -185,6 +186,10 @@
     <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:15px">Votre commande</h2>
       ${t.lignes.map(({ p, q }) => `<div class="ligne"><span class="vign" style="width:48px;height:48px;border-radius:12px">${img(p)}</span><span style="flex:1;font-size:14px">${esc(p.nom)} <span class="petit">× ${q}</span></span><span class="prix" style="font-size:14px">${ar(p.prix * q)}</span></div>`).join('')}</div>
     <div class="carte ligne petit" style="font-size:13px;padding:12px 16px">${ic(ui.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${ui.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom}, ${esc(B.ville)} · ${esc(B.delaiRetrait)}`}</span></div>
+    <div class="col" style="gap:6px"><label class="lib" for="telcmd" style="font-size:15px;font-weight:600">Numéro pour vous joindre</label>
+      <div class="tel"${ui.telErreur ? ' style="border-color:var(--err)"' : ''}><span><svg width="20" height="14" viewBox="0 0 30 20" aria-hidden="true"><rect width="10" height="20" fill="#fff"/><rect x="10" width="20" height="10" fill="#FC3D32"/><rect x="10" y="10" width="20" height="10" fill="#007E3A"/><rect x=".5" y=".5" width="29" height="19" fill="none" stroke="#E2E5DF"/></svg>+261</span>
+      <input id="telcmd" type="tel" inputmode="numeric" autocomplete="tel-national" data-in="telcmd" value="${esc(ui.telCmd != null ? ui.telCmd : (client.tel || ''))}" placeholder="34 00 000 00" aria-describedby="telcmd-aide" aria-invalid="${!!ui.telErreur}"></div>
+      <span id="telcmd-aide" class="petit" style="color:${ui.telErreur ? 'var(--err)' : 'var(--muted)'}">${esc(ui.telErreur || 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.')}</span></div>
     <div class="col" style="gap:8px"><h2 class="h2" style="font-size:15px">Moyen de paiement</h2>
       <div class="choix trois" role="radiogroup" aria-label="Moyen de paiement">${[['mvola', 'MVola'], ['orange', 'Orange Money'], ['especes', 'Espèces']].map(([id, l]) => `<button class="opt" role="radio" aria-checked="${ui.paiement === id}" data-a="payer-par" data-id="${id}">${l}</button>`).join('')}</div>
       <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start" role="status">${ic('info', 16, 'style="flex-shrink:0;margin-top:1px"')}${notesPaiement[ui.paiement]}</p></div>
@@ -203,7 +208,7 @@
     <div class="col" style="align-items:center;text-align:center;gap:8px">
       <span style="width:96px;height:96px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 12px var(--lime-soft);margin:12px 0 10px">${ic('check', 44, 'stroke-width="2.6"')}</span>
       <h1 class="titre" style="font-size:26px">Réservation confirmée !</h1>
-      <p class="petit" style="font-size:14px;margin:0;max-width:300px">Nous préparons votre commande. Vous recevrez un SMS dès qu'elle est prête.</p></div>
+      <p class="petit" style="font-size:14px;margin:0;max-width:300px">Nous préparons votre commande et vous appelons au +261 ${esc(c.tel)} dès qu'elle est prête.</p></div>
     <div class="carte ligne entre" style="background:var(--ink);color:#fff;border-radius:22px">
       <div class="col"><span class="petit" style="color:var(--dim)">Code de retrait à présenter en boutique</span><b style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--lime)">${esc(c.code)}</b></div>
       <button class="rond" style="background:rgba(255,255,255,.12);color:#fff" data-a="copier" data-id="${esc(c.code)}" aria-label="Copier le code">${ic('copie', 18)}</button></div>
@@ -232,13 +237,13 @@
   V.compte = () => {
     if (!client) { return `<div class="ecran"><h1 class="titre">Mon compte</h1>
       <div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('user', 28)}</span><b style="font-size:17px">Connectez-vous</b>
-      <span class="petit" style="font-size:13px">Avec votre numéro de téléphone, pour suivre vos commandes et votre carte fidélité.</span>
+      <span class="petit" style="font-size:13px">Avec Facebook, Google ou votre e-mail, pour suivre vos commandes et votre carte fidélité.</span>
       <button class="btn" data-a="aller-connexion" style="margin-top:6px">Se connecter</button></div>${menuCompte()}</div>`; }
     const n = commandes.length, f = n % 5;
     return `<div class="ecran"><h1 class="titre">Mon compte</h1>
     <div class="carte col" style="background:var(--ink);color:#fff;border-radius:22px;gap:14px">
       <div class="ligne"><span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>
-        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">+261 ${esc(client.tel)}</b><span class="petit" style="color:var(--dim)">${n} commande(s)</span></div></div>
+        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--dim)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${n} commande(s)</span></div></div>
       <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--dim)"><b style="color:var(--lime)">${f}</b> achat(s) sur 5</span></div>
         <div role="progressbar" aria-label="Carte fidélité" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${f}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${[0, 1, 2, 3, 4].map((k) => `<span style="height:8px;border-radius:4px;background:${k < f ? 'var(--lime)' : '#3A3E3A'}"></span>`).join('')}</div>
         <span class="petit" style="color:var(--dim)">Encore ${5 - f} achat(s) pour une révision offerte au garage.</span></div></div>
@@ -293,11 +298,24 @@
       catch (e) { toast('Partage indisponible ici'); }
     },
     async copier(code) { try { await navigator.clipboard.writeText(code); toast('Code copié'); } catch (e) { toast('Notez le code : ' + code); } },
-    commander() { if (client) aller('paiement'); else { ui.retour = 'paiement'; ui.etapeCnx = 'tel'; aller('connexion'); } },
-    'aller-connexion'() { ui.retour = 'compte'; ui.etapeCnx = 'tel'; aller('connexion'); },
-    'changer-tel'() { ui.etapeCnx = 'tel'; ui.codeErreur = ''; rafraichir(); },
+    commander() { if (client) aller('paiement'); else { ui.retour = 'paiement'; aller('connexion'); } },
+    'aller-connexion'() { ui.retour = 'compte'; aller('connexion'); },
+    /* Connexion. En démo, on crée un compte local ; avec Firebase, ici : signInWithPopup (Facebook, Google) ou sendSignInLinkToEmail. */
+    cnx(methode) {
+      const noms = { facebook: 'Client Facebook', google: 'Client Google', email: ui.emailEnvoye };
+      client = { methode, nom: noms[methode] || 'Client', email: methode === 'email' ? ui.emailEnvoye : '', tel: (client && client.tel) || '' };
+      ui.emailEnvoye = ''; ui.email = ''; sauver(); toast('Connecté'); aller(ui.retour || 'compte');
+    },
+    'email-autre'() { ui.emailEnvoye = ''; rafraichir(); },
     deconnexion() { client = null; sauver(); toast('Déconnecté'); rafraichir(); },
     confirmer() {
+      const brut = ui.telCmd != null ? ui.telCmd : (client.tel || '');
+      const chiffres = brut.replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
+      if (!/^3[2-47-8]\d{7}$/.test(chiffres)) {
+        ui.telErreur = brut.trim() ? 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.' : 'Indiquez un numéro pour que la boutique puisse vous joindre.';
+        rafraichir(); const f = document.getElementById('telcmd'); if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); } return;
+      }
+      client.tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); ui.telErreur = ''; ui.telCmd = null;
       const t = totaux();
       const num = String(128 + commandes.length).padStart(4, '0');
       const c = { code: 'DMS-' + num, date: new Date().toLocaleDateString('fr-FR'), lignes: t.lignes.map(({ p, q }) => ({ id: p.id, q, prix: p.prix })),
@@ -321,7 +339,8 @@
       document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', String(!ui.recherche && b.dataset.id === ui.cat))); }
     if (k === 'tri') { ui.tri = e.target.value; const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml(); }
     if (k === 'promo') ui.promoSaisie = e.target.value;
-    if (k === 'tel') ui.tel = e.target.value;
+    if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
+    if (k === 'email') ui.email = e.target.value;
     if (k === 'code') {
       e.target.value = e.target.value.replace(/\D/g, '').slice(-1);
       const cases = [...document.querySelectorAll('[data-in=code]')];
@@ -351,16 +370,10 @@
       else { ui.promo = null; ui.promoMsg = code ? 'Ce code n’existe pas ou a expiré.' : 'Entrez un code.'; }
       rafraichir();
     }
-    if (f === 'tel') {
-      const chiffres = ui.tel.replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
-      if (!/^3[2-47-8]\d{7}$/.test(chiffres)) { ui.telErreur = 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.'; rafraichir(); return; }
-      ui.tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); ui.telErreur = ''; ui.codeErreur = ''; ui.etapeCnx = 'code'; rafraichir();
-      const c = document.querySelector('[data-in=code]'); if (c) c.focus();
-    }
-    if (f === 'code') {
-      const code = [...document.querySelectorAll('[data-in=code]')].map((c) => c.value).join('');
-      if (code !== '123456') { ui.codeErreur = code.length < 6 ? 'Entrez les 6 chiffres du code.' : 'Code incorrect. Vérifiez le SMS et réessayez.'; rafraichir(); return; }
-      client = { tel: ui.tel }; ui.etapeCnx = 'tel'; ui.codeErreur = ''; sauver(); toast('Connecté'); aller(ui.retour || 'compte');
+    if (f === 'email') {
+      const m = ui.email.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m)) { ui.emailErreur = m ? 'Adresse e-mail invalide. Vérifiez-la.' : 'Entrez votre adresse e-mail.'; rafraichir(); const f = document.getElementById('email'); if (f) f.focus(); return; }
+      ui.emailErreur = ''; ui.emailEnvoye = m; rafraichir();
     }
   });
 
