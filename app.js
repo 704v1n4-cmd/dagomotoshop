@@ -119,7 +119,7 @@
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--sel);color:var(--sel-txt);border-color:var(--sel)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
-    <div id="grille" class="col" style="gap:4px">${grilleHtml()}</div></div>`;
+    <div id="grille" class="col" style="gap:4px">${grilleHtml()}</div><p class="petit" style="text-align:center;margin:18px 0 0">Photos non contractuelles.</p></div>`;
   };
 
   const similaires = (p) => {
@@ -139,7 +139,8 @@
     <div class="hero">
       <div class="ligne entre" style="position:relative;z-index:4"><button class="rond" data-a="retour" aria-label="Retour">${ic('retour')}</button>
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
-      <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div></div>
+      <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div>
+      <span class="mention-photo">Photo non contractuelle</span></div>
     ${img(p, 'hero-img')}
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
