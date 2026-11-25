@@ -195,3 +195,9 @@ svg{flex-shrink:0}
 .charge{padding:40vh 24px 0;text-align:center;color:var(--muted);font-size:15px}
 .secours{padding:30vh 24px 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
 .secours button{height:52px;padding:0 22px;border-radius:999px;background:var(--sel);color:var(--sel-txt);font-weight:600}
+
+/* Fond « Showroom » des fiches produit : projecteur au plafond et sol */
+.hero{background:linear-gradient(180deg,transparent 72%,var(--sol-ligne) 72.3%,transparent 100%),conic-gradient(from 160deg at 50% -10%,transparent 0deg,var(--spot) 20deg,transparent 40deg),linear-gradient(180deg,var(--mur-haut),var(--mur-bas) 70%,var(--sol))}
+.hero::before{display:none}
+:root{--mur-haut:#D4D4D8;--mur-bas:#EFEFF1;--sol:#E4E4E7;--spot:rgba(255,255,255,.95);--sol-ligne:rgba(24,24,27,.10)}
+@media (prefers-color-scheme:dark){:root{--mur-haut:#0E0F0D;--mur-bas:#26292B;--sol:#141615;--spot:rgba(255,255,255,.22);--sol-ligne:rgba(91,229,43,.18)}}
