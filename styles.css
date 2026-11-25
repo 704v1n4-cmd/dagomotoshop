@@ -252,3 +252,25 @@ img.photo-reelle{object-fit:cover;filter:none!important;border-radius:14px}
 .choix-etoiles button{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--line);border-radius:12px}
 .choix-etoiles button.on{color:#F5A70A}
 .noter{border:2px solid var(--lime)}
+/* Galerie des photos du vendeur (pièces de particuliers) */
+.galerie{position:absolute;z-index:3;left:0;right:0;top:calc(70px + env(safe-area-inset-top));height:200px;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.galerie::-webkit-scrollbar{display:none}
+.galerie figure{flex:0 0 100%;margin:0;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;position:relative}
+.galerie img{height:190px;width:auto;max-width:82%;object-fit:cover;border-radius:18px;box-shadow:0 14px 28px rgba(0,0,0,.22)}
+.galerie figcaption{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;background:rgba(255,255,255,.9);color:#18181B;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.points{position:absolute;z-index:4;left:0;right:0;top:calc(282px + env(safe-area-inset-top));display:flex;justify-content:center;gap:6px}
+.points i{width:7px;height:7px;border-radius:4px;background:color-mix(in srgb,var(--ink) 28%,transparent);transition:width .2s}
+.points i.on{width:22px;background:var(--ink)}
+.compte{position:absolute;z-index:4;right:18px;top:calc(276px + env(safe-area-inset-top));font-size:12px;font-weight:600;background:rgba(24,24,27,.75);color:#fff;padding:3px 8px;border-radius:999px}
+@media (prefers-reduced-motion:reduce){.points i{transition:none}}
+/* Emplacements photo guidés */
+.emplacements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.emplacement{position:relative;min-height:150px;border:2px dashed var(--line);border-radius:16px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:12px 10px;cursor:pointer;font-size:13px}
+.emplacement.requis{border-color:color-mix(in srgb,var(--ink) 35%,transparent)}
+.emplacement .oblig{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:2px}
+.emplacement.requis .oblig{color:var(--ink)}
+.emplacement.plein{border-style:solid;padding:0;overflow:hidden;background:var(--soft)}
+.emplacement.plein img{width:100%;height:150px;object-fit:cover}
+.emplacement .etiq{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:600;background:rgba(255,255,255,.9);color:#18181B;padding:3px 8px;border-radius:999px}
+.emplacement .rond{position:absolute;top:6px;right:6px;width:34px;height:34px}
+textarea{font:inherit;color:inherit}

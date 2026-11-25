@@ -25,7 +25,7 @@
   let vendeurs = Object.assign(JSON.parse(JSON.stringify(D.vendeursDemo)), store.get('vendeurs', {}));
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', notes: {}, vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photo: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+    paiement: 'mvola', notes: {}, vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); };
 
   /* ---------- Outils ---------- */
@@ -38,7 +38,7 @@
   const acompteDe = (prix) => Math.round(prix * PP.acompte / 100) * 100;
   const netVendeur = (prix) => Math.round(prix * (1 - PP.commission) / 100) * 100;
   const deAnnonce = (x) => ({ id: x.id, cat: 'occasion', nom: x.titre, detail: x.compat + ' · ' + x.etatPiece, prix: x.prix, stock: x.etat === 'en_ligne' ? 1 : 0,
-    img: x.photo, rond: /^img\//.test(x.photo), photoReelle: !/^img\//.test(x.photo), particulier: true, vendeurId: x.vendeurId, etatAnnonce: x.etat, description: x.description || 'Pièce proposée par un particulier.' });
+    img: (x.photos && x.photos[0]) || x.photo, photos: x.photos || [x.photo], rond: /^img\//.test((x.photos && x.photos[0]) || x.photo), photoReelle: !/^img\//.test((x.photos && x.photos[0]) || x.photo), particulier: true, vendeurId: x.vendeurId, etatAnnonce: x.etat, description: x.description || 'Pièce proposée par un particulier.' });
   const TAGS = { conforme: 'Conforme à la photo', etat: 'État comme annoncé', prix: 'Bon prix' };
   const statV = (vid) => {
     const v = vendeurs[vid]; if (!v) return null;
@@ -175,7 +175,8 @@
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
       <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div>
       <span class="mention-photo">${p.particulier ? 'Photo du vendeur' : 'Photo non contractuelle'}</span></div>
-    ${img(p, 'hero-img')}
+    ${p.photos && p.photos.length > 1 ? `<div class="galerie" aria-label="Photos du vendeur">${p.photos.map((u, k) => `<figure><img src="${u}" alt="${esc(p.nom)}, photo ${k + 1}" class="photo-reelle"><figcaption>${esc((EMPLACEMENTS[k] || ['Photo'])[0])}</figcaption></figure>`).join('')}</div>
+      <div class="points" aria-hidden="true">${p.photos.map((_, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div><span class="compte" aria-live="polite">1/${p.photos.length}</span>` : img(p, 'hero-img')}
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
         <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
@@ -352,6 +353,8 @@
   const badgeStatut = (x) => `<span class="badge statut ${STATUTS[x.etat][2]}">${STATUTS[x.etat][0]}</span>`;
   const champ = (id, lib, html, aide) => `<div class="col" style="gap:6px"><label class="lib" for="${id}">${lib}</label>${html}${aide ? `<span class="petit">${aide}</span>` : ''}</div>`;
 
+  const EMPLACEMENTS = [['Vue d’ensemble', 'La pièce entière, bien centrée', 'photo'], ['Références', 'Numéros, marque ou inscriptions gravés', 'loupe'],
+    ['Défauts et usure', 'Rayures, usure, fixations : montrez-les', 'info'], ['Autre côté', 'Le dessous ou l’arrière', 'photo'], ['Pièce montée ou détail', 'Si vous l’avez', 'photo']];
   V.vendre = () => {
     if (!client) { ui.retour = 'vendre'; location.hash = 'connexion'; return ''; }
     const v = ui.vente, prix = +v.prix || 0;
@@ -359,17 +362,18 @@
     return `<div class="ecran">${entete('Vendre une pièce', 'compte')}
     <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:16px">Comment ça marche</h2>
       <ol class="etapes-vente">
-        <li><b>Vous publiez</b> la photo réelle et le prix de votre pièce. La boutique valide l’annonce.</li>
+        <li><b>Vous publiez</b> au moins 3 photos réelles et le prix de votre pièce. La boutique valide l’annonce.</li>
         <li><b>Un acheteur réserve</b> : vous avez ${PP.delaiDepot} pour déposer la pièce au magasin ${esc(B.nom)}.</li>
         <li><b>L’acheteur l’examine</b> au comptoir. S’il la prend, vous êtes payé tout de suite, moins ${Math.round(PP.commission * 100)} % de commission.</li></ol>
       <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start">${ic('bouclier', 16, 'style="flex-shrink:0;margin-top:1px"')}Pièces uniquement (pas de moto ni de scooter). Votre nom et votre numéro ne sont jamais montrés à l’acheteur.</p></div>
     <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:16px">Guide photo</h2>
-      <div class="guide">${[['soleil', 'En plein jour', 'Près d’une fenêtre ou dehors, sans flash.'], ['photo', 'Pièce entière', 'Posée sur un fond uni et clair, bien centrée.'], ['loupe', 'Les références', 'Montrez les numéros ou marques gravés.'], ['info', 'Les défauts', 'Rayures, usure : montrez-les, l’acheteur les verra.']]
-        .map(([i, t, d]) => `<div class="conseil">${ic(i, 20)}<b>${t}</b><span class="petit">${d}</span></div>`).join('')}</div></div>
+      <p class="petit" style="margin:0">Pour toutes les photos : en plein jour, sans flash, pièce posée sur un fond uni et clair. Pas d’image trouvée sur internet.</p></div>
     <form data-form="vendre" class="col" style="gap:14px" novalidate>
-      ${v.photo ? `<div class="photo-zone pleine"><img src="${v.photo}" alt="Photo de votre pièce"><button type="button" class="rond" data-a="photo-suppr" aria-label="Changer de photo" style="position:absolute;top:10px;right:10px">${ic('modifier', 18)}</button></div>`
-        : `<label class="photo-zone" for="v-photo">${ic('photo', 34)}<b>Prendre ou choisir une photo</b><span class="petit">Photo réelle de votre pièce, pas d’image d’internet</span></label>`}
-      <input id="v-photo" type="file" accept="image/*" data-in="v-photo" class="sr">
+      <div class="col" style="gap:8px"><div class="ligne entre"><b style="font-size:15px;font-weight:600">Photos de la pièce</b><span class="petit" role="status">${v.photos.filter(Boolean).length}/5 · minimum 3</span></div>
+      <div class="emplacements">${EMPLACEMENTS.map(([t, d, i], k) => v.photos[k]
+        ? `<div class="emplacement plein"><img src="${v.photos[k]}" alt="${t}"><span class="etiq">${k + 1}. ${t}</span><button type="button" class="rond" data-a="photo-suppr" data-id="${k}" aria-label="Supprimer la photo ${k + 1}">${ic('moins', 16)}</button></div>`
+        : `<label class="emplacement${k < 3 ? ' requis' : ''}" for="v-photo-${k}">${ic(i, 26)}<b>${k + 1}. ${t}</b><span class="petit">${d}</span><span class="oblig">${k < 3 ? 'Obligatoire' : 'Facultatif'}</span></label>`).join('')}</div>
+      ${EMPLACEMENTS.map((_, k) => `<input id="v-photo-${k}" type="file" accept="image/*" data-in="v-photo" data-slot="${k}" class="sr">`).join('')}</div>
       ${champ('v-titre', 'Nom de la pièce', `<input id="v-titre" class="saisie" data-in="v-titre" value="${esc(v.titre)}" placeholder="Ex. Carburateur, rétroviseur gauche" maxlength="60">`)}
       ${champ('v-compat', 'Compatible avec', `<input id="v-compat" class="saisie" data-in="v-compat" value="${esc(v.compat)}" placeholder="Ex. Kymco GP 125" maxlength="60">`)}
       ${champ('v-etat', 'État', `<select id="v-etat" class="saisie" data-in="v-etat">${ETATS_PIECE.map((e) => `<option${v.etatPiece === e ? ' selected' : ''}>${e}</option>`).join('')}</select>`)}
@@ -406,6 +410,7 @@
       <div class="ligne" style="gap:12px;align-items:flex-start"><span class="vign" style="width:88px;height:88px">${img(deAnnonce(x))}</span>
       <div class="col" style="flex:1;gap:2px"><b style="font-size:15px;font-weight:600">${esc(x.titre)}</b><span class="petit">${esc(x.compat)} · ${esc(x.etatPiece)}</span><span class="prix" style="font-size:15px">${ar(x.prix)}</span>
       <span class="petit">Vendeur : ${esc(x.vendeur.nom)} · +261 ${esc(x.vendeur.tel)}</span></div></div>
+      ${(x.photos || []).length > 1 ? `<div class="defile" style="gap:6px">${x.photos.map((u) => `<img src="${u}" alt="" class="photo-reelle" style="width:86px;height:86px;flex-shrink:0">`).join('')}</div>` : ''}
       ${x.description ? `<p class="petit" style="margin:0;font-size:13px">${esc(x.description)}</p>` : ''}${boutons}</div>`;
     return `<div class="ecran">${entete('Espace boutique', 'compte')}
     <p class="demo" style="margin:0">Démonstration : dans la vraie app, cet écran sera réservé à votre compte boutique. Le numéro du vendeur n’apparaît qu’ici.</p>
@@ -598,7 +603,7 @@
       l.note = o.n; delete ui.notes[cle]; sauver(); toast('Merci pour votre note'); rafraichir();
     },
     'vente-accepte'() { ui.vente.accepte = !ui.vente.accepte; ui.vente.erreur = ''; rafraichir(); },
-    'photo-suppr'() { ui.vente.photo = ''; rafraichir(); },
+    'photo-suppr'(k) { ui.vente.photos[+k] = ''; rafraichir(); },
     'demo-statut'(code) { const c = trouverCmd(code); if (c && c.statut < 3) { c.statut++; sauver(); rafraichir(); } }
   };
 
@@ -645,10 +650,10 @@
   /* Photo de l'annonce : réduite à 900 px de large pour rester légère sur une connexion lente. */
   document.addEventListener('change', (e) => {
     if (!(e.target.dataset && e.target.dataset.in === 'v-photo') || !e.target.files || !e.target.files[0]) return;
-    const f = e.target.files[0]; if (!/^image\//.test(f.type)) { ui.vente.erreur = 'Choisissez une image.'; rafraichir(); return; }
+    const slot = +e.target.dataset.slot || 0; const f = e.target.files[0]; if (!/^image\//.test(f.type)) { ui.vente.erreur = 'Choisissez une image.'; rafraichir(); return; }
     const url = URL.createObjectURL(f), im = new Image();
     im.onload = () => { const k = Math.min(1, 900 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ui.vente.photo = c.toDataURL('image/jpeg', 0.72); ui.vente.erreur = ''; rafraichir(); };
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ui.vente.photos[slot] = c.toDataURL('image/jpeg', 0.72); ui.vente.erreur = ''; rafraichir(); };
     im.onerror = () => { ui.vente.erreur = 'Impossible de lire cette photo. Essayez-en une autre.'; rafraichir(); };
     im.src = url;
   });
@@ -658,14 +663,15 @@
     e.preventDefault();
     if (f === 'vendre') {
       const v = ui.vente, chiffres = (v.tel || client.tel || '').replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
-      const err = !v.photo ? 'Ajoutez une photo réelle de votre pièce.' : v.titre.trim().length < 3 ? 'Indiquez le nom de la pièce.' : !v.compat.trim() ? 'Indiquez avec quels modèles la pièce est compatible.'
+      const nbP = [0, 1, 2].filter((k) => v.photos[k]).length;
+      const err = nbP < 3 ? `Ajoutez les 3 photos obligatoires (${nbP}/3) : vue d’ensemble, références, défauts.` : v.titre.trim().length < 3 ? 'Indiquez le nom de la pièce.' : !v.compat.trim() ? 'Indiquez avec quels modèles la pièce est compatible.'
         : !(+v.prix >= 1000) ? 'Indiquez un prix d’au moins 1 000 Ar.' : !/^3[2-47-8]\d{7}$/.test(chiffres) ? 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.' : !v.accepte ? 'Acceptez les conditions pour envoyer l’annonce.' : '';
       if (err) { v.erreur = err; rafraichir(); const a = document.querySelector('[role=alert]'); if (a) a.scrollIntoView({ block: 'center' }); return; }
       const tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); client.tel = client.tel || tel;
-      annonces.push({ id: 'occ-' + Date.now().toString(36), etat: 'attente', titre: v.titre.trim(), compat: v.compat.trim(), etatPiece: v.etatPiece, prix: +v.prix, description: v.desc.trim(), photo: v.photo,
+      annonces.push({ id: 'occ-' + Date.now().toString(36), etat: 'attente', titre: v.titre.trim(), compat: v.compat.trim(), etatPiece: v.etatPiece, prix: +v.prix, description: v.desc.trim(), photos: v.photos.filter(Boolean), photo: v.photos[0],
         vendeur: { nom: client.nom || 'Vendeur', tel }, vendeurId: 'moi', proprio: true, creeLe: Date.now() });
       if (!vendeurs.moi) vendeurs.moi = { alias: 'Vendeur n°' + String(50 + Math.floor(Math.random() * 49)), ventes: 0, notes: [], tags: {} };
-      ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photo: '', accepte: false, erreur: '' };
+      ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], accepte: false, erreur: '' };
       sauver(); toast('Annonce envoyée à la boutique'); aller('annonces'); return;
     }
     if (f === 'recherche') { ui.recherche = e.target.q.value; memoRecherche(ui.recherche); aller('catalogue'); }
@@ -688,6 +694,12 @@
   const verifierImages = () => document.querySelectorAll('img.sq:not(.ok)').forEach((i) => { if (i.complete) marque(i); });
   new MutationObserver(verifierImages).observe(document.body, { childList: true, subtree: true });
   document.documentElement.classList.add('js-sq');
+  document.addEventListener('scroll', (e) => {
+    const g = e.target; if (!g.classList || !g.classList.contains('galerie')) return;
+    const i = Math.round(g.scrollLeft / g.clientWidth), n = g.children.length;
+    document.querySelectorAll('.points i').forEach((d, k) => d.classList.toggle('on', k === i));
+    const c = document.querySelector('.hero .compte, .compte'); if (c) c.textContent = (i + 1) + '/' + n;
+  }, true);
   window.addEventListener('hashchange', route);
   route();
 
