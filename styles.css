@@ -187,3 +187,5 @@ svg{flex-shrink:0}
 .prod .prix,.mini .prix{white-space:normal;line-height:1.25}
 .prod .ligne.entre{gap:8px}
 .hero .rond:not(.lime){background:var(--bg)}
+/* Mode sombre : léger liseré clair pour que les scooters noirs ne se perdent pas dans le fond */
+@media (prefers-color-scheme:dark){.prod .boite img:not(.rondimg),.mini .boite img:not(.rondimg),.offre .vis:not(.rondimg),.hero-img:not(.rondimg),.banniere .moto,.vign img:not(.rondimg){filter:drop-shadow(0 0 1px rgba(255,255,255,.35)) drop-shadow(0 8px 10px rgba(0,0,0,.5))}}

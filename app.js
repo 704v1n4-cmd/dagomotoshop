@@ -67,7 +67,7 @@
       <div class="col" style="flex:1"><span class="petit" style="font-size:13px">Manao ahoana !</span><b style="font-size:17px;font-weight:600">${B.nom}</b></div>
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
-      <img class="moto" src="img/cygnus-3.png" alt="">
+      <img class="moto" src="img/cygnus-3.webp" alt="">
       <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Yamaha, Kymco, SYM et PGO révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
@@ -191,7 +191,7 @@
     <div class="hero" style="height:240px"><a href="#${ui.retour === 'paiement' ? 'panier' : 'compte'}" class="rond" style="position:relative;background:var(--fort-ghost);color:var(--fort-txt)" aria-label="Retour">${ic('retour')}</a>
       <img src="img/logo.jpg" alt="Dagomotoshop" style="position:relative;width:60px;height:60px;border-radius:14px;margin-top:14px">
       <p style="position:relative;color:var(--fort-txt);font-weight:700;font-size:22px;line-height:1.2;max-width:210px;margin:12px 0 0">${ui.retour === 'paiement' ? 'Plus qu’une étape avant votre <span class="surl">réservation.</span>' : 'Retrouvez vos <span class="surl">commandes.</span>'}</p></div>
-    <img src="img/scooter.png" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(100px + env(safe-area-inset-top));width:176px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
+    <img src="img/scooter.webp" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(100px + env(safe-area-inset-top));width:176px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
     <div class="dessus" style="gap:12px;padding-top:22px">
       <div class="col" style="gap:4px"><h1 class="h2" style="font-size:20px">Connectez-vous</h1><span class="petit" style="font-size:13px">En un clic, sans mot de passe.</span></div>
       <button class="btn fb" data-a="cnx" data-id="facebook">${LOGO_FB}Continuer avec Facebook</button>
