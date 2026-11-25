@@ -233,3 +233,22 @@ img.photo-reelle{object-fit:cover;filter:none!important;border-radius:14px}
 .prod .boite img.photo-reelle,.mini .boite img.photo-reelle{width:100%;height:100%;max-height:none}
 .vign img.photo-reelle{width:100%;height:100%;margin:0;border-radius:inherit}
 .hero-img.photo-reelle{height:230px;width:300px;max-width:84%;border-radius:22px;box-shadow:0 18px 30px rgba(0,0,0,.25)}
+/* Notes des vendeurs */
+.etoiles{display:inline-flex;gap:2px;vertical-align:middle}
+.etoiles i{display:inline-block;background:linear-gradient(90deg,#F5A70A var(--r),var(--line) var(--r));-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8L14.8 8.5L21 9.4L16.5 13.8L17.6 20L12 17.1L6.4 20L7.5 13.8L3 9.4L9.2 8.5L12 2.8Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8L14.8 8.5L21 9.4L16.5 13.8L17.6 20L12 17.1L6.4 20L7.5 13.8L3 9.4L9.2 8.5L12 2.8Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.vendeur-ligne{display:flex;align-items:center;gap:4px;font-size:12px;margin-top:4px;flex-wrap:wrap}
+.vendeur-ligne>svg{color:#F5A70A}
+.vendeur-ligne .top,.badge.top{display:inline-flex;align-items:center;gap:4px;background:var(--lime);color:var(--on-lime);font-weight:700;font-size:11px;padding:2px 7px;border-radius:999px}
+.vendeur-ligne .top{margin-right:2px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.vendeur-carte{flex:0 0 auto;display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:16px;padding:10px 14px 10px 10px;font-size:13px;border:1px solid var(--line)}
+.vendeur-carte .avatar{width:38px;height:38px}
+.bloc-vendeur{border:1px solid var(--line)}
+.jauges{display:flex;flex-direction:column;gap:6px}
+.jauges>div{display:grid;grid-template-columns:130px 1fr 40px;align-items:center;gap:8px;font-size:12px}
+.jauges b{text-align:right;font-size:12px}
+.jauge{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}.jauge i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.choix-etoiles{display:flex;justify-content:center;gap:6px}
+.choix-etoiles button{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--line);border-radius:12px}
+.choix-etoiles button.on{color:#F5A70A}
+.noter{border:2px solid var(--lime)}

@@ -24,11 +24,21 @@ window.DMS_DONNEES = {
   /* Vente de pièces entre particuliers : la boutique sert d'intermédiaire, retrait toujours au magasin. */
   particuliers: { commission: 0.10, acompte: 0.10, delaiDepot: '48 h', retrait: '7 jours', reprise: '7 jours' },
   /* Annonces d'exemple pour la démonstration (remplacées par les vraies annonces une fois Firebase branché). */
+  /* Vendeurs particuliers : seulement un pseudonyme public, jamais de nom ni de numéro. notes = étoiles données par les acheteurs. */
+  vendeursDemo: {
+    v27: { alias: 'Vendeur n°27', ventes: 14, notes: [5, 5, 4, 5, 5, 5, 4, 5, 5, 5, 5, 4], tags: { conforme: 11, etat: 10, prix: 8 } },
+    v08: { alias: 'Vendeur n°08', ventes: 6, notes: [5, 4, 5, 4, 5], tags: { conforme: 5, etat: 3, prix: 4 } },
+    v41: { alias: 'Vendeur n°41', ventes: 2, notes: [4, 3], tags: { conforme: 1, etat: 1, prix: 2 } }
+  },
   annoncesDemo: [
     { id: 'occ-demo1', etat: 'en_ligne', titre: 'Rétroviseurs Cygnus (paire)', compat: 'Yamaha Cygnus 1 à 4', etatPiece: 'Bon état', prix: 25000,
-      description: 'Paire de rétroviseurs d\u2019origine, quelques rayures sur les coques, verres intacts.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 01' }, demo: true },
+      description: 'Paire de rétroviseurs d\u2019origine, quelques rayures sur les coques, verres intacts.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 01' }, vendeurId: 'v41', demo: true },
     { id: 'occ-demo2', etat: 'en_ligne', titre: 'Carburateur GP 125', compat: 'Kymco GP 125 carburateur', etatPiece: 'Très bon état', prix: 60000,
-      description: 'Carburateur démonté d\u2019un GP 125, nettoyé.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 02' }, demo: true }
+      description: 'Carburateur démonté d\u2019un GP 125, nettoyé.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 02' }, vendeurId: 'v27', demo: true },
+    { id: 'occ-demo3', etat: 'en_ligne', titre: 'Phare avant Cygnus 3', compat: 'Yamaha Cygnus 3', etatPiece: 'Bon état', prix: 45000,
+      description: 'Bloc optique complet, une petite fêlure sur un support de fixation.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 02' }, vendeurId: 'v27', demo: true },
+    { id: 'occ-demo4', etat: 'en_ligne', titre: 'Selle G6', compat: 'Kymco G6 125/150', etatPiece: 'Très bon état', prix: 55000,
+      description: 'Selle d\u2019origine sans déchirure.', photo: 'img/pieces.webp', vendeur: { nom: 'Vendeur exemple', tel: '34 00 000 03' }, vendeurId: 'v08', demo: true }
   ],
   produits: [
     /* stock : nombre en boutique (0 = sur commande, null = non affiché). cylindree : pour le filtre. prix : null = « Prix sur demande ».
