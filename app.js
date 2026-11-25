@@ -136,7 +136,7 @@
     const fav = favoris.includes(p.id);
     const eco = p.ancienPrix ? p.ancienPrix - p.prix : 0;
     return `<div class="ecran" style="padding-top:0">
-    <div class="hero"><span class="fili" aria-hidden="true">${esc(p.specs ? p.specs[0][0] : D.categories.find((c) => c.id === p.cat).nom)}</span>
+    <div class="hero">
       <div class="ligne entre" style="position:relative;z-index:4"><button class="rond" data-a="retour" aria-label="Retour">${ic('retour')}</button>
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
       <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div></div>
