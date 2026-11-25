@@ -40,7 +40,7 @@ Photos : sur fond blanc ou gris clair uni, sans ombre au sol, puis détourées (
 4. Au bout d'une minute, l'app est en ligne à `https://TON-COMPTE.github.io/dagomotoshop/`.
 5. Sur le téléphone, ouvre ce lien dans Chrome → menu ⋮ → « Installer l'application » (sur iPhone : Safari → Partager → « Sur l'écran d'accueil »).
 
-À chaque mise à jour, change `VERSION` dans `sw.js` (`dms-v2`, `dms-v3`…) pour que les téléphones prennent la nouvelle version.
+À chaque mise à jour, change `VERSION` dans `sw.js` (`dms-v5`, `dms-v6`…) et le numéro `?v=` des fichiers dans `index.html` et `sw.js`, pour que les téléphones prennent la nouvelle version.
 
 ## 3. Étape suivante : Firebase (gratuit au départ)
 
