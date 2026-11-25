@@ -33,8 +33,9 @@
   const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
+  const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
   const prixTxt = (p) => p.prix ? ar(p.prix) : 'Prix sur demande';
-  const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + ' (' + p.detail + ') ?')}`;
+  const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + (ui.taille && p.versions ? ' ' + ui.taille : '') + ' (' + p.detail + ') ?')}`;
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
@@ -67,7 +68,7 @@
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
       <img class="moto" src="img/cygnus-3.png" alt="">
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span style="font-size:12px;color:#C9CEC9">Yamaha Cygnus et RS Zero révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span style="font-size:12px;color:#C9CEC9">Yamaha, Kymco et PGO révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
@@ -90,7 +91,7 @@
   const passeFiltres = (p) => {
     if (ui.f.prix && !p.prix) return false;
     if (ui.f.prix) { const [a, b] = ui.f.prix.split('-'); if (a && p.prix < +a) return false; if (b && p.prix >= +b) return false; }
-    if (ui.f.cyl && p.cylindree !== +ui.f.cyl) return false;
+    if (ui.f.cyl && ![].concat(p.cylindree).includes(+ui.f.cyl)) return false;
     if (ui.f.promo && !p.ancienPrix) return false;
     if (ui.f.stock && !(p.stock > 0)) return false;
     return true;
@@ -113,7 +114,7 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
-    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'RS Zero', 'Casque', 'Plaquettes', 'Courroie']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
+    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'Kymco', 'PGO', 'RS Zero', 'Casque', 'Plaquettes']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--ink);color:var(--lime);border-color:var(--ink)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
@@ -129,6 +130,7 @@
   V.produit = (id) => {
     const p = produit(id);
     if (ui.produitVu !== id) { ui.produitVu = id; ui.taille = ''; ui.tailleErreur = false; }
+    const choix = p ? choixDe(p) : null;
     if (!p) return V.introuvable();
     const fav = favoris.includes(p.id);
     const eco = p.ancienPrix ? p.ancienPrix - p.prix : 0;
@@ -145,8 +147,8 @@
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft)">-${grp(eco)} Ar</span>` : ''}</div>
         <span class="petit">${p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
         ${p.stock != null ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
-      ${p.tailles ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Taille</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? 'Choisissez une taille' : 'Tour de tête en cm'}</span></div>
-        <div class="seg" role="radiogroup" aria-label="Taille" style="grid-template-columns:repeat(${p.tailles.length},minmax(0,1fr))">${p.tailles.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${t}"><b>${t}</b><span class="petit" style="font-size:11px">${cm}</span></button>`).join('')}</div></div>` : ''}
+      ${choix ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">${choix.titre}</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? choix.erreur : choix.aide}</span></div>
+        <div class="seg" role="radiogroup" aria-label="${choix.titre}" style="grid-template-columns:repeat(${Math.min(choix.liste.length, 4)},minmax(0,1fr))">${choix.liste.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${esc(t)}"><b>${esc(t)}</b>${cm ? `<span class="petit" style="font-size:11px">${esc(cm)}</span>` : ''}</button>`).join('')}</div></div>` : ''}
       ${p.specs ? `<div class="specs">${p.specs.map(([v, l]) => `<div><b>${esc(v)}</b><span class="petit" style="font-size:11px">${esc(l)}</span></div>`).join('')}</div>` : ''}
       <div class="carte ligne entre petit" style="padding:12px 16px;font-size:13px;flex-wrap:wrap;gap:8px"><span class="ligne" style="gap:8px">${ic('pin', 18)}Retrait ${esc(B.delaiRetrait)}</span><span class="ligne" style="gap:8px">${ic('horloge', 18)}${esc(B.horaires)}</span></div>
       <div class="carte col" style="gap:6px"><h2 class="h2" style="font-size:15px">Description</h2><p class="petit" style="margin:0;font-size:13px;line-height:1.5">${esc(p.description)}</p></div>
@@ -168,7 +170,7 @@
     return `<div class="ecran">${tete}
     <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
       <a href="#produit-${p.id}" class="vign sq-att">${img(p)}</a>
-      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}${taille ? ' · Taille ' + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
+      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}${taille ? (p.tailles ? ' · Taille ' : ' · ') + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
       <div class="pas"><button data-a="moins" data-id="${esc(cle)}" aria-label="${q === 1 ? 'Retirer' : 'Diminuer la quantité de'} ${esc(p.nom)}">${ic('moins', 16)}</button><span aria-live="polite">${q}</span>
       <button class="plus" data-a="plus" data-id="${esc(cle)}" aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
     <div class="choix" role="radiogroup" aria-label="Mode de retrait">
@@ -258,7 +260,7 @@
       <div class="etapes"><span class="rail"></span><span class="plein" style="width:${s * 25}%"></span>
       ${ETAPES.map(([l, i], k) => `<div class="etape ${k < s || s === 3 ? 'fait' : k === s ? 'encours' : ''}"><i>${ic(i)}</i>${l}</div>`).join('')}</div>
       <div class="ligne" style="background:var(--bg);border-radius:14px;padding:12px">${ic('horloge', 22)}<span style="font-size:13px">${MSG[s]}</span></div></div>
-    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${l.taille ? 'Taille ' + esc(l.taille) + ' · ' : ''}× ${l.q}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
+    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${l.taille ? (p.tailles ? 'Taille ' : '') + esc(l.taille) + ' · ' : ''}× ${l.q}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
       <div class="ligne entre" style="padding:12px 0;border-top:1px solid var(--line);font-weight:600"><span>Total</span><span class="prix">${ar(c.total)}</span></div></div>
     <p class="petit" style="margin:0">Le statut est mis à jour par la boutique.</p>
     ${s < 3 ? `<button class="btn clair" data-a="demo-statut" data-id="${esc(c.code)}">Démo : passer à l'étape suivante</button>` : ''}</div>`;
@@ -317,7 +319,7 @@
       <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
-      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [125, '125 cc']]) : ''}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
       </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
@@ -350,10 +352,10 @@
   const actions = {
     ajouter(id) {
       const p = produit(id); if (!p || !p.prix) return;
-      if (p.tailles && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
-      const cle = p.tailles ? id + '@' + ui.taille : id;
+      if (choixDe(p) && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
+      const cle = choixDe(p) ? id + '@' + ui.taille : id;
       panier[cle] = (panier[cle] || 0) + 1; sauver(); rafraichir();
-      ouvrirFeuille('ajout', feuilleAjout(p, p.tailles ? ui.taille : ''), 'Ajouté au panier');
+      ouvrirFeuille('ajout', feuilleAjout(p, choixDe(p) ? ui.taille : ''), 'Ajouté au panier');
     },
     taille(t) { ui.taille = t; ui.tailleErreur = false; rafraichir(); },
     'voir-panier'() { fermerFeuille(); aller('panier'); },

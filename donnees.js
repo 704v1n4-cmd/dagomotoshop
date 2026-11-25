@@ -22,7 +22,8 @@ window.DMS_DONNEES = {
   ],
   produits: [
     /* stock : nombre en boutique (0 = sur commande, null = non affiché). cylindree : pour le filtre. prix : null = « Prix sur demande ».
-       tailles : [taille, tour de tête en cm]. photoProvisoire : affiche « Photo non contractuelle ». */
+       tailles : [taille, tour de tête en cm]. versions : [version, précision] (au choix du client).
+       cylindree peut être une liste, ex. [125, 150]. photoProvisoire : affiche « Photo non contractuelle ». */
     { id: 'cygnus-3', cat: 'scooters', nom: 'Yamaha Cygnus 3', detail: '125 cc · Occasion Taïwan', stock: null, cylindree: 125, prix: null,
       img: 'img/cygnus-3.png', vedette: true,
       specs: [['125 cc', 'Cylindrée'], ['3e', 'Génération'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
@@ -43,6 +44,15 @@ window.DMS_DONNEES = {
       img: 'img/rs-zero.png',
       specs: [['100 cc', 'Cylindrée'], ['Léger', 'Gabarit'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
       description: "Yamaha RS Zero 100 cc, léger et économique pour la ville, importé de Taïwan et révisé au garage. Prix, année et kilométrage sur demande." },
+    { id: 'kymco-g6', cat: 'scooters', nom: 'Kymco G6', detail: '125 ou 150 cc · Occasion Taïwan', stock: null, cylindree: [125, 150], prix: null,
+      img: 'img/kymco-g6.png', vedette: true,
+      versions: [['125 cc', ''], ['150 cc', ''], ['150 VVCS', ''], ['150 ABS', 'Freinage ABS']],
+      specs: [['125–150', 'cc'], ['4', 'Versions'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
+      description: "Kymco G6 importé de Taïwan et révisé au garage, disponible selon arrivage en 125 cc, 150 cc, 150 VVCS (distribution variable) ou 150 ABS. Prix, année et kilométrage sur demande." },
+    { id: 'pgo-bon', cat: 'scooters', nom: 'PGO Bon 125', detail: '125 cc · Occasion Taïwan', stock: null, cylindree: 125, prix: null,
+      img: 'img/pgo-bon.png',
+      specs: [['125 cc', 'Cylindrée'], ['PGO', 'Marque'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
+      description: "PGO Bon 125 importé de Taïwan et révisé au garage. Prix, année et kilométrage sur demande." },
     { id: 'kit-freinage', cat: 'pieces', nom: 'Kit freinage', detail: 'Plaquettes + disque', stock: 12, prix: 45000, ancienPrix: 53000,
       img: 'img/pieces.png', rond: true, badge: '-15 %',
       description: "Plaquettes et disque avant, compatibles avec la plupart des 125 cc. Pose possible au garage." },
