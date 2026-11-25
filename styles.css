@@ -78,7 +78,7 @@ label.lib{font-size:13px;font-weight:500}
 .hero{height:300px;background:var(--ink);position:relative;overflow:hidden;margin:0 -18px;padding:calc(16px + env(safe-area-inset-top)) 18px 0}
 .hero::before{content:"";position:absolute;width:340px;height:340px;left:50%;margin-left:-170px;top:40px;border-radius:50%;background:radial-gradient(circle,rgba(91,229,43,.5),rgba(91,229,43,0) 68%)}
 .hero .fili{position:absolute;left:0;right:0;top:110px;text-align:center;font-weight:800;font-style:italic;font-size:92px;letter-spacing:-2px;color:rgba(255,255,255,.06)}
-.hero-img{position:absolute;z-index:3;left:50%;top:calc(84px + env(safe-area-inset-top));transform:translateX(-50%);width:270px;filter:drop-shadow(0 18px 18px rgba(0,0,0,.35))}
+.hero-img{position:absolute;z-index:3;left:50%;top:calc(84px + env(safe-area-inset-top));transform:translateX(-50%);width:auto;height:205px;max-width:280px;object-fit:contain;filter:drop-shadow(0 18px 18px rgba(0,0,0,.35))}
 .hero-img.rondimg{width:220px;height:220px;border-radius:50%;border:6px solid #fff;top:calc(70px + env(safe-area-inset-top))}
 .dessus{margin:-28px -18px 0;position:relative;z-index:1;background:var(--bg);border-radius:28px 28px 0 0;padding:16px 18px 0;display:flex;flex-direction:column;gap:10px}
 .specs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -166,9 +166,9 @@ label.lib{font-size:13px;font-weight:500}
 .mini .boite img.rondimg{width:64px;height:64px;border-radius:50%;border:3px solid #fff;margin-bottom:6px;filter:none}
 .mini b{font-weight:600}
 /* Squelette : lueur tant que la photo n'est pas chargée */
-.boite.sq-att:not(.ok),.vign.sq-att:not(.ok){background:linear-gradient(100deg,var(--soft) 30%,#F7F8F5 50%,var(--soft) 70%);background-size:220% 100%;animation:lueur 1.2s linear infinite}
-img.sq:not(.ok){opacity:0}img.sq.ok{opacity:1;transition:opacity .25s}
+.js-sq .boite.sq-att:not(.ok),.js-sq .vign.sq-att:not(.ok){background:linear-gradient(100deg,var(--soft) 30%,#F7F8F5 50%,var(--soft) 70%);background-size:220% 100%;animation:lueur 1.2s linear infinite}
+.js-sq img.sq:not(.ok){opacity:0}img.sq.ok{opacity:1;transition:opacity .25s}
 @keyframes lueur{to{background-position:-120% 0}}
-@media (prefers-reduced-motion:reduce){.feuille,.voile{animation:none}.boite.sq-att:not(.ok),.vign.sq-att:not(.ok){animation:none}}
+@media (prefers-reduced-motion:reduce){.feuille,.voile{animation:none}.js-sq .boite.sq-att:not(.ok),.js-sq .vign.sq-att:not(.ok){animation:none}}
 svg{flex-shrink:0}
 [role=tab].puce{padding:0 8px;gap:5px;font-size:12.5px}

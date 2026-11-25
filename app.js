@@ -30,7 +30,7 @@
   const fmg = (n) => grp(n * 5) + ' Fmg';
   const produit = (id) => D.produits.find((p) => p.id === id);
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
-  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy" onload="this.classList.add('ok');this.parentNode.classList.add('ok')" onerror="this.classList.add('ok');this.parentNode.classList.add('ok')">`;
+  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
@@ -454,6 +454,12 @@
     }
   });
 
+  const marque = (i) => { i.classList.add('ok'); if (i.parentNode && i.parentNode.classList) i.parentNode.classList.add('ok'); };
+  document.addEventListener('load', (e) => { if (e.target.tagName === 'IMG') marque(e.target); }, true);
+  document.addEventListener('error', (e) => { if (e.target.tagName === 'IMG') marque(e.target); }, true);
+  const verifierImages = () => document.querySelectorAll('img.sq:not(.ok)').forEach((i) => { if (i.complete) marque(i); });
+  new MutationObserver(verifierImages).observe(document.body, { childList: true, subtree: true });
+  document.documentElement.classList.add('js-sq');
   window.addEventListener('hashchange', route);
   route();
 
