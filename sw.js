@@ -1,6 +1,6 @@
 /* Service worker : garde l'app disponible hors connexion.
    Change VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version. */
-const VERSION = 'dms-v18';
+const VERSION = 'dms-v19';
 const FICHIERS = ['./', 'index.html', 'styles.css?v=14', 'app.js?v=14', 'donnees.js?v=14', 'icones.js?v=14', 'manifest.webmanifest',
   'img/logo.jpg', 'img/scooter.webp', 'img/cygnus-1.webp', 'img/cygnus-2.webp', 'img/cygnus-3.webp', 'img/rs-zero.webp', 'img/cygnus-4.webp', 'img/kymco-g6.webp', 'img/pgo-bon.webp', 'img/kymco-vjr-110.webp', 'img/kymco-vjr-125.webp', 'img/kymco-g5.webp', 'img/pgo-jbubu.webp', 'img/kymco-gp.webp', 'img/kymco-gp2.webp', 'img/sym-jet-sr.webp', 'img/sym-jet-evo.webp', 'img/kymco-new-many.webp', 'img/pgo-tigra.webp', 'img/casque.webp', 'img/pieces.webp', 'img/icone-192.png', 'img/icone-512.png'];
 

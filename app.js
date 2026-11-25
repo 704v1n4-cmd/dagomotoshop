@@ -24,6 +24,7 @@
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); };
 
   /* ---------- Outils ---------- */
+  const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const grp = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   const ar = (n) => grp(n) + ' Ar';
@@ -39,7 +40,7 @@
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
-  const rondPanier = () => `<a href="#panier" class="rond" aria-label="Panier, ${nbPanier()} article(s)">${ic('panier')}${nbPanier() ? `<span class="pastille">${nbPanier()}</span>` : ''}</a>`;
+  const rondPanier = () => `<a href="#panier" class="rond" aria-label="Panier, ${pl(nbPanier(), 'article')}">${ic('panier')}${nbPanier() ? `<span class="pastille">${nbPanier()}</span>` : ''}</a>`;
   const entete = (titre, retour, droite = '') => `<div class="ligne entre"><a href="#${retour}" class="rond" aria-label="Retour">${ic('retour')}</a><h1 class="h2">${titre}</h1>${droite || '<span style="width:44px"></span>'}</div>`;
   let toastT;
   const toast = (t) => { $toast.textContent = t; $toast.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => $toast.classList.remove('vu'), 1800); };
@@ -104,7 +105,7 @@
   };
   const grilleHtml = () => {
     const { l, q } = listeCatalogue();
-    return `<p class="petit" style="margin:0;font-size:13px"><b style="color:var(--ink)">${l.length}</b> résultat(s)${q ? ` pour « ${esc(ui.recherche)} »` : ''}</p>
+    return `<p class="petit" style="margin:0;font-size:13px"><b style="color:var(--ink)">${l.length}</b> résultat${l.length > 1 ? 's' : ''}${q ? ` pour « ${esc(ui.recherche)} »` : ''}</p>
       ${l.length ? `<div class="grille">${l.map(carteProd).join('')}</div>` : `<div class="carte col vide"><b>Aucun produit trouvé</b><span class="petit">Essayez un autre mot ou retirez un filtre. Nous commandons aussi sur demande.</span>${nbFiltres() ? '<button class="btn clair" data-a="filtres-raz" style="height:46px;margin-top:6px">Retirer les filtres</button>' : ''}</div>`}`;
   };
   V.catalogue = (cat) => {
@@ -144,7 +145,7 @@
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
         <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
-        ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft)">-${grp(eco)} Ar</span>` : ''}</div>
+        ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
         <span class="petit">${p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
         ${p.stock != null ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
       ${choix ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">${choix.titre}</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? choix.erreur : choix.aide}</span></div>
@@ -165,7 +166,7 @@
     const t = totaux();
     const tete = entete(`Mon panier <span class="petit" style="font-size:17px">(${t.n})</span>`, 'catalogue', t.n ? '<button data-a="vider" style="height:44px;padding:0 4px;font-size:13px;font-weight:500;color:var(--muted)">Vider</button>' : '');
     if (!t.n) return `<div class="ecran">${tete}<div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('panier', 28)}</span>
-      <b style="font-size:17px">Votre panier est vide</b><span class="petit" style="font-size:13px">Scooters, pièces et casques vous attendent dans le catalogue.</span>
+      <b style="font-size:17px">Votre panier est vide</b><span class="petit" style="font-size:13px">Parcourez les scooters, pièces et casques du catalogue.</span>
       <a href="#catalogue" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Voir le catalogue</a></div></div>`;
     return `<div class="ecran">${tete}
     <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
@@ -245,7 +246,7 @@
       <div class="col"><span class="petit" style="color:var(--noir-mut)">Code de retrait à présenter en boutique</span><b style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--lime)">${esc(c.code)}</b></div>
       <button class="rond" style="background:rgba(255,255,255,.12);color:var(--noir-txt)" data-a="copier" data-id="${esc(c.code)}" aria-label="Copier le code">${ic('copie', 18)}</button></div>
     <div class="carte col" style="gap:9px;font-size:13px">
-      <div class="ligne" style="gap:10px">${ic('panier', 18)}<span>${c.lignes.reduce((s, l) => s + l.q, 0)} article(s) · <b class="nw">${ar(c.total)}</b></span></div>
+      <div class="ligne" style="gap:10px">${ic('panier', 18)}<span>${pl(c.lignes.reduce((s, l) => s + l.q, 0), 'article')} · <b class="nw">${ar(c.total)}</b></span></div>
       <div class="ligne" style="gap:10px">${ic(c.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${c.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom} · ${esc(B.delaiRetrait)}`}</span></div>
       <div class="ligne" style="gap:10px">${ic('carte', 18)}<span>${{ mvola: 'MVola', orange: 'Orange Money', especes: 'Espèces à la boutique' }[c.paiement]}</span></div></div>
     <div class="col" style="gap:10px;margin-top:6px"><a class="btn" href="#suivi-${esc(c.code)}">Suivre ma commande</a><a class="btn clair" href="#accueil">Retour à l'accueil</a></div></div>`;
@@ -275,10 +276,10 @@
     return `<div class="ecran"><h1 class="titre">Mon compte</h1>
     <div class="carte col" style="background:var(--noir);color:var(--noir-txt);border-radius:22px;gap:14px">
       <div class="ligne"><span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>
-        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--noir-mut)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${n} commande(s)</span></div></div>
-      <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--noir-mut)"><b style="color:var(--lime)">${f}</b> achat(s) sur 5</span></div>
+        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--noir-mut)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${pl(n, 'commande')}</span></div></div>
+      <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--noir-mut)"><b style="color:var(--lime)">${f}</b> achat${f > 1 ? 's' : ''} sur 5</span></div>
         <div role="progressbar" aria-label="Carte fidélité" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${f}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${[0, 1, 2, 3, 4].map((k) => `<span style="height:8px;border-radius:4px;background:${k < f ? 'var(--lime)' : 'var(--noir-vide)'}"></span>`).join('')}</div>
-        <span class="petit" style="color:var(--noir-mut)">Encore ${5 - f} achat(s) pour une révision offerte au garage.</span></div></div>
+        <span class="petit" style="color:var(--noir-mut)">Encore ${pl(5 - f, 'achat')} pour une révision offerte au garage.</span></div></div>
     <div class="carte col" style="gap:4px"><h2 class="h2" style="font-size:15px">Mes commandes</h2>
       ${n ? commandes.slice().reverse().slice(0, 4).map((c) => `<a href="#suivi-${esc(c.code)}" class="ligne entre" style="min-height:52px;border-top:1px solid var(--line)"><span class="col"><b style="font-size:14px;font-weight:600">${esc(c.code)}</b><span class="petit">${esc(c.date)} · ${ar(c.total)}</span></span>
         <span class="badge" style="${c.statut === 3 ? 'background:var(--soft);color:var(--muted)' : ''}">${ETAPES[c.statut][0]}</span></a>`).join('') : '<span class="petit" style="padding:6px 0">Aucune commande pour le moment.</span>'}</div>
@@ -309,20 +310,20 @@
   }
   const feuilleAjout = (p, taille) => `<div class="ligne" style="gap:14px"><span class="vign" style="width:72px;height:72px">${img(p)}</span>
       <div class="col" style="flex:1"><span class="ligne petit" style="gap:6px;color:var(--ok);font-weight:600">${ic('check', 16)}Ajouté au panier</span><b style="font-size:16px;font-weight:600">${esc(p.nom)}${taille ? ' · ' + esc(taille) : ''}</b><span class="prix">${prixTxt(p)}</span></div></div>
-    <div class="ligne entre petit" style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:13px"><span>Panier : ${nbPanier()} article(s)</span><b class="nw" style="color:var(--ink)">${ar(totaux().total)}</b></div>
+    <div class="ligne entre petit" style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:13px"><span>Panier : ${pl(nbPanier(), 'article')}</span><b class="nw" style="color:var(--ink)">${ar(totaux().total)}</b></div>
     <div class="col" style="gap:10px"><a class="btn" href="#panier" data-a="voir-panier">Voir le panier</a><button class="btn clair" data-a="fermer-feuille">Continuer mes achats</button></div>`;
   const feuilleFiltres = () => {
     const nb = listeCatalogue().l.length;
     const tr = ui.cat === 'scooters' ? TRANCHES.scooters : TRANCHES.autre;
     const groupe = (titre, cle, opts) => `<div class="col" style="gap:8px"><h3 class="h2" style="font-size:14px">${titre}</h3><div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button aria-pressed="${String(ui.f[cle]) === String(v)}" data-a="filtre" data-id="${cle}:${v}">${l}</button>`).join('')}</div></div>`;
     return `<div class="ligne entre" style="margin-bottom:12px"><button data-a="filtres-raz" style="min-height:44px;font-weight:500;color:var(--muted)">Réinitialiser</button>
-      <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
+      <b style="font-size:16px">${nbFiltres() ? pl(nbFiltres(), 'filtre') : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
       ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [110, '110 cc'], [115, '115 cc'], [125, '125 cc'], [150, '150 cc'], [155, '155 cc']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
-      </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
+      </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">${nb ? 'Voir ' + pl(nb, 'résultat') : 'Aucun résultat'}</button>`;
   };
   const majFiltres = () => { if (feuilleType === 'filtres') ouvrirFeuille('filtres', feuilleFiltres(), 'Filtres'); const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml(); };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerFeuille(); });
