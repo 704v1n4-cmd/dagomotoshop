@@ -114,7 +114,7 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
-    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'Kymco', 'PGO', 'RS Zero', 'Casque', 'Plaquettes']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
+    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'VJR', 'PGO', 'RS Zero', 'Casque']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--ink);color:var(--lime);border-color:var(--ink)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
@@ -319,7 +319,7 @@
       <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
-      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [110, '110 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
       </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
