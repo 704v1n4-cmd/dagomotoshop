@@ -72,9 +72,8 @@ label.lib{font-size:13px;font-weight:500}
 .offres{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:40px 18px 4px;margin:-26px -18px 0;scroll-snap-type:x mandatory;scroll-padding-inline:18px}
 .offres::-webkit-scrollbar{display:none}
 .offre{flex:0 0 168px;scroll-snap-align:start;background:var(--card);border-radius:22px;padding:112px 14px 14px;position:relative;display:flex;flex-direction:column;gap:4px}
-.offre.noire{flex-basis:236px;background:var(--noir);color:var(--noir-txt)}
-.offre.noire .petit,.offre.noire .barre{color:var(--noir-mut)}
-.offre.noire .prix{color:var(--lime)}
+.offre.noire{flex-basis:236px}
+.offre.noire .prix{font-size:16px}
 .offre .vis{position:absolute;left:50%;top:-30px;transform:translateX(-50%);width:128px;filter:drop-shadow(0 10px 10px rgba(0,0,0,.28))}
 .offre.noire .vis{width:162px;top:-34px}
 .offre .vis.rondimg{width:124px;height:124px;border-radius:50%;border:5px solid var(--cadre);box-shadow:0 10px 18px var(--ombre)}
