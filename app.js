@@ -33,6 +33,8 @@
   const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
+  const prixTxt = (p) => p.prix ? ar(p.prix) : 'Prix sur demande';
+  const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + ' (' + p.detail + ') ?')}`;
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
@@ -64,29 +66,29 @@
       <div class="col" style="flex:1"><span class="petit" style="font-size:13px">Manao ahoana !</span><b style="font-size:17px;font-weight:600">${B.nom}</b></div>
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
-      <img class="moto" src="img/scooter.png" alt="">
-      <span class="sticker" style="right:min(128px,34%);bottom:14px;font-size:18px;padding:7px 10px">-10 %</span>
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span style="font-size:12px;color:#C9CEC9">Scooters révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <img class="moto" src="img/cygnus-3.png" alt="">
+      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span style="font-size:12px;color:#C9CEC9">Yamaha Cygnus et RS Zero révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
     <div class="offres">${vedettes.map((p, i) => `<a href="#produit-${p.id}" class="offre${i === 0 ? ' noire' : ''}">
       ${img(p, 'vis')}${p.badge ? `<span class="sticker">${esc(p.badge)}</span>` : ''}
       <span class="petit">${esc(p.detail)}</span><b style="font-size:${i === 0 ? 17 : 16}px;font-weight:600">${esc(p.nom)}</b>
-      <span class="ligne" style="gap:8px;align-items:baseline"><span class="prix">${ar(p.prix)}</span>${p.ancienPrix ? `<span class="barre">${grp(p.ancienPrix)}</span>` : ''}</span></a>`).join('')}</div>
+      <span class="ligne" style="gap:8px;align-items:baseline"><span class="prix">${prixTxt(p)}</span>${p.ancienPrix ? `<span class="barre">${grp(p.ancienPrix)}</span>` : ''}</span></a>`).join('')}</div>
   </div>`;
   };
 
   const carteProd = (p) => `<div class="prod">
     <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span></a>
-    <div class="ligne entre" style="margin-top:4px"><span class="prix">${ar(p.prix)}</span>
-    ${p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
+    <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixTxt(p)}</span>
+    ${!p.prix ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
     ${p.stock != null && p.stock <= 2 ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
   const TRANCHES = { scooters: [['-3500000', 'Moins de 3,5 M'], ['3500000-4500000', '3,5 à 4,5 M'], ['4500000-', 'Plus de 4,5 M']],
     autre: [['-20000', 'Moins de 20 000'], ['20000-100000', '20 000 à 100 000'], ['100000-', 'Plus de 100 000']] };
   const nbFiltres = () => (ui.f.prix ? 1 : 0) + (ui.f.cyl ? 1 : 0) + (ui.f.promo ? 1 : 0) + (ui.f.stock ? 1 : 0);
   const passeFiltres = (p) => {
+    if (ui.f.prix && !p.prix) return false;
     if (ui.f.prix) { const [a, b] = ui.f.prix.split('-'); if (a && p.prix < +a) return false; if (b && p.prix >= +b) return false; }
     if (ui.f.cyl && p.cylindree !== +ui.f.cyl) return false;
     if (ui.f.promo && !p.ancienPrix) return false;
@@ -96,7 +98,7 @@
   const listeCatalogue = () => {
     const q = ui.recherche.trim().toLowerCase();
     let l = D.produits.filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
-    l = l.slice().sort((a, b) => ui.tri === 'asc' ? a.prix - b.prix : b.prix - a.prix);
+    l = l.slice().sort((a, b) => { const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
   };
   const grilleHtml = () => {
@@ -111,7 +113,7 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
-    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Casque', 'Plaquettes', '125 cc', 'Courroie', 'Bougie']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
+    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'RS Zero', 'Casque', 'Plaquettes', 'Courroie']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--ink);color:var(--lime);border-color:var(--ink)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
@@ -122,7 +124,7 @@
     const l = D.produits.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
     if (!l.length) return '';
     return `<div class="col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Vous aimerez aussi</h2><a href="#catalogue-${p.cat}" class="petit" style="font-size:13px;min-height:40px;display:flex;align-items:center">Tout voir</a></div>
-      <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${ar(x.prix)}</span></a>`).join('')}</div></div>`;
+      <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${prixTxt(x)}</span></a>`).join('')}</div></div>`;
   };
   V.produit = (id) => {
     const p = produit(id);
@@ -139,9 +141,9 @@
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
         <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
-        <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${ar(p.prix)}</span>
+        <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft)">-${grp(eco)} Ar</span>` : ''}</div>
-        <span class="petit">soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces</span>
+        <span class="petit">${p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
         ${p.stock != null ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
       ${p.tailles ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Taille</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? 'Choisissez une taille' : 'Tour de tête en cm'}</span></div>
         <div class="seg" role="radiogroup" aria-label="Taille" style="grid-template-columns:repeat(${p.tailles.length},minmax(0,1fr))">${p.tailles.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${t}"><b>${t}</b><span class="petit" style="font-size:11px">${cm}</span></button>`).join('')}</div></div>` : ''}
@@ -154,7 +156,7 @@
         <a class="rond lime" href="tel:${B.telephone.replace(/\s/g, '')}" aria-label="Appeler la boutique au ${esc(B.telephone)}">${ic('tel')}</a></div>
     </div></div>
     <div class="basbar">${rondPanier().replace('class="rond"', 'class="rond" style="width:54px;height:54px;background:var(--bg)"')}
-      <button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button></div>`;
+      ${p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
   };
 
   V.panier = () => {
@@ -304,7 +306,7 @@
     if (feuilleAvant && document.contains(feuilleAvant)) feuilleAvant.focus({ preventScroll: true });
   }
   const feuilleAjout = (p, taille) => `<div class="ligne" style="gap:14px"><span class="vign" style="width:72px;height:72px">${img(p)}</span>
-      <div class="col" style="flex:1"><span class="ligne petit" style="gap:6px;color:var(--ok);font-weight:600">${ic('check', 16)}Ajouté au panier</span><b style="font-size:16px;font-weight:600">${esc(p.nom)}${taille ? ' · ' + esc(taille) : ''}</b><span class="prix">${ar(p.prix)}</span></div></div>
+      <div class="col" style="flex:1"><span class="ligne petit" style="gap:6px;color:var(--ok);font-weight:600">${ic('check', 16)}Ajouté au panier</span><b style="font-size:16px;font-weight:600">${esc(p.nom)}${taille ? ' · ' + esc(taille) : ''}</b><span class="prix">${prixTxt(p)}</span></div></div>
     <div class="ligne entre petit" style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:13px"><span>Panier : ${nbPanier()} article(s)</span><b class="nw" style="color:var(--ink)">${ar(totaux().total)}</b></div>
     <div class="col" style="gap:10px"><a class="btn" href="#panier" data-a="voir-panier">Voir le panier</a><button class="btn clair" data-a="fermer-feuille">Continuer mes achats</button></div>`;
   const feuilleFiltres = () => {
@@ -315,7 +317,7 @@
       <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
-      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[50, '50 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [125, '125 cc']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
       </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
@@ -347,7 +349,7 @@
   /* ---------- Actions ---------- */
   const actions = {
     ajouter(id) {
-      const p = produit(id); if (!p) return;
+      const p = produit(id); if (!p || !p.prix) return;
       if (p.tailles && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
       const cle = p.tailles ? id + '@' + ui.taille : id;
       panier[cle] = (panier[cle] || 0) + 1; sauver(); rafraichir();
@@ -369,7 +371,7 @@
     retour() { if (history.length > 1) history.back(); else aller('accueil'); },
     favori(id) { favoris = favoris.includes(id) ? favoris.filter((f) => f !== id) : favoris.concat(id); sauver(); rafraichir(); },
     async partager(id) {
-      const p = produit(id), texte = `${p.nom} à ${ar(p.prix)} chez ${B.nom}`;
+      const p = produit(id), texte = `${p.nom} ${p.prix ? 'à ' + ar(p.prix) + ' ' : ''}chez ${B.nom}`;
       try { if (navigator.share) { await navigator.share({ title: p.nom, text: texte, url: location.href }); return; } await navigator.clipboard.writeText(texte + ' ' + location.href); toast('Lien copié'); }
       catch (e) { toast('Partage indisponible ici'); }
     },

@@ -172,3 +172,5 @@ label.lib{font-size:13px;font-weight:500}
 @media (prefers-reduced-motion:reduce){.feuille,.voile{animation:none}.js-sq .boite.sq-att:not(.ok),.js-sq .vign.sq-att:not(.ok){animation:none}}
 svg{flex-shrink:0}
 [role=tab].puce{padding:0 8px;gap:5px;font-size:12.5px}
+.prod .prix,.mini .prix{white-space:normal;line-height:1.25}
+.prod .ligne.entre{gap:8px}

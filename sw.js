@@ -1,8 +1,8 @@
 /* Service worker : garde l'app disponible hors connexion.
    Change VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version. */
-const VERSION = 'dms-v6';
-const FICHIERS = ['./', 'index.html', 'styles.css?v=6', 'app.js?v=6', 'donnees.js?v=6', 'icones.js?v=6', 'manifest.webmanifest',
-  'img/logo.jpg', 'img/scooter.png', 'img/casque.png', 'img/pieces.png', 'img/icone-192.png', 'img/icone-512.png'];
+const VERSION = 'dms-v7';
+const FICHIERS = ['./', 'index.html', 'styles.css?v=7', 'app.js?v=7', 'donnees.js?v=7', 'icones.js?v=7', 'manifest.webmanifest',
+  'img/logo.jpg', 'img/scooter.png', 'img/cygnus-1.png', 'img/cygnus-2.png', 'img/cygnus-3.png', 'img/rs-zero.png', 'img/casque.png', 'img/pieces.png', 'img/icone-192.png', 'img/icone-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
