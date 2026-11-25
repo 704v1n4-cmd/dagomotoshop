@@ -1,0 +1,140 @@
+/*
+VOICE  : boutique moto de quartier, directe et fiable
+IDEA   : la vitrine noire et lime du logo Dagomotoshop
+PICTURE: produits détourés qui sortent de leur cadre
+COLOUR : encre #0E0F0D, lime #5BE52B, fond clair #F3F4F0
+TYPE   : Inter ; LAYOUT : mobile d'abord, colonne de 480 px max
+*/
+:root{--ink:#0E0F0D;--lime:#5BE52B;--lime-soft:#E4F9D8;--bg:#F3F4F0;--card:#fff;--muted:#5B625C;--dim:#A3AAA4;--line:#E2E5DF;--soft:#ECEEE9;--err:#B42318;--ok:#1E7A12;--r:20px;color-scheme:light}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:#DADDD6}
+body{font:15px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);overflow-x:clip;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;padding:0}
+a,button{-webkit-tap-highlight-color:transparent;transition:opacity .12s ease}
+a:active,button:active{opacity:.7}
+:focus-visible{outline:3px solid var(--lime);outline-offset:2px}
+img{display:block}
+.nw{white-space:nowrap}
+.app{max-width:480px;margin:0 auto;min-height:100dvh;background:var(--bg);position:relative;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.ecran{padding:calc(16px + env(safe-area-inset-top)) 18px 0;display:flex;flex-direction:column;gap:14px}
+.ligne{display:flex;align-items:center;gap:12px}
+.entre{justify-content:space-between}
+.col{display:flex;flex-direction:column}
+.titre{font-weight:700;font-size:24px;margin:0}
+.h2{font-weight:600;font-size:17px;margin:0}
+.petit{font-size:12px;color:var(--muted)}
+.carte{background:var(--card);border-radius:var(--r);padding:16px}
+.rond{width:44px;height:44px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.rond.lime{background:var(--lime)}
+.pastille{position:absolute;top:2px;right:2px;background:var(--lime);color:var(--ink);font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.btn{height:56px;border-radius:999px;background:var(--ink);color:var(--lime);font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.btn.clair{background:var(--card);color:var(--ink);border:1px solid var(--line);height:52px;font-size:15px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.badge{background:var(--lime);color:var(--ink);font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+.prix{font-weight:700;white-space:nowrap}
+.barre{text-decoration:line-through;color:var(--muted);font-size:12px;white-space:nowrap}
+.defile{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-right:-18px;padding-right:18px}
+.defile::-webkit-scrollbar{display:none}
+.puce{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
+.puce[aria-pressed=true],.puce[aria-selected=true]{background:var(--ink);color:var(--lime);border-color:var(--ink);font-weight:600}
+.champ{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:999px;padding:0 16px;height:50px}
+.champ input{border:none;outline:none;background:transparent;font-size:16px;flex:1}
+.saisie{height:50px;border-radius:14px;border:1px solid var(--line);background:var(--card);padding:0 14px;font-size:16px;width:100%}
+label.lib{font-size:13px;font-weight:500}
+
+/* Bannière */
+.banniere{position:relative;height:168px;margin-top:16px;color:#fff}
+.banniere .fond{position:absolute;inset:0;border-radius:22px;overflow:hidden;background:var(--ink)}
+.banniere .fond::before{content:"";position:absolute;width:220px;height:220px;right:-50px;top:-30px;border-radius:50%;background:radial-gradient(circle,rgba(91,229,43,.55),rgba(91,229,43,0) 70%)}
+.banniere .moto{position:absolute;right:-10px;top:-36px;width:min(196px,48%);filter:drop-shadow(0 10px 14px rgba(0,0,0,.45))}
+.banniere .txt{position:relative;height:100%;max-width:62%;padding:20px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.banniere b{font-size:22px;line-height:1.2}
+.banniere b span{color:var(--lime)}
+.banniere a{align-self:flex-start;background:#fff;color:var(--ink);font-weight:600;font-size:13px;padding:10px 16px;border-radius:999px}
+.sticker{position:absolute;background:var(--lime);color:var(--ink);font-weight:800;line-height:1;border-radius:12px;border:3px solid #fff;transform:rotate(-12deg)}
+
+/* Cartes produit */
+.offres{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:40px 18px 4px;margin:-26px -18px 0;scroll-snap-type:x mandatory;scroll-padding-inline:18px}
+.offres::-webkit-scrollbar{display:none}
+.offre{flex:0 0 168px;scroll-snap-align:start;background:var(--card);border-radius:22px;padding:112px 14px 14px;position:relative;display:flex;flex-direction:column;gap:4px}
+.offre.noire{flex-basis:236px;background:var(--ink);color:#fff}
+.offre.noire .petit,.offre.noire .barre{color:var(--dim)}
+.offre.noire .prix{color:var(--lime)}
+.offre .vis{position:absolute;left:50%;top:-30px;transform:translateX(-50%);width:128px;filter:drop-shadow(0 10px 10px rgba(0,0,0,.28))}
+.offre.noire .vis{width:162px;top:-34px}
+.offre .vis.rondimg{width:124px;height:124px;border-radius:50%;border:5px solid #fff;box-shadow:0 10px 18px rgba(14,15,13,.18)}
+.offre .sticker{top:-8px;left:-4px;font-size:15px;padding:6px 9px;border-color:var(--bg)}
+.grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 12px;padding-top:30px}
+.prod{background:var(--card);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:3px;position:relative}
+.prod .boite{height:88px;border-radius:14px;background:var(--soft);display:flex;align-items:flex-end;justify-content:center}
+.prod .boite img{width:min(118px,90%);filter:drop-shadow(0 8px 8px rgba(0,0,0,.25))}
+.prod .boite img.rondimg{width:80px;height:80px;border-radius:50%;border:4px solid #fff;margin-bottom:4px;filter:none}
+.prod .badge{position:absolute;top:16px;left:16px}
+.ajout{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--lime);display:flex;align-items:center;justify-content:center}
+
+/* Fiche produit */
+.hero{height:300px;background:var(--ink);position:relative;overflow:hidden;margin:0 -18px;padding:calc(16px + env(safe-area-inset-top)) 18px 0}
+.hero::before{content:"";position:absolute;width:340px;height:340px;left:50%;margin-left:-170px;top:40px;border-radius:50%;background:radial-gradient(circle,rgba(91,229,43,.5),rgba(91,229,43,0) 68%)}
+.hero .fili{position:absolute;left:0;right:0;top:110px;text-align:center;font-weight:800;font-style:italic;font-size:92px;letter-spacing:-2px;color:rgba(255,255,255,.06)}
+.hero-img{position:absolute;z-index:3;left:50%;top:calc(84px + env(safe-area-inset-top));transform:translateX(-50%);width:270px;filter:drop-shadow(0 18px 18px rgba(0,0,0,.35))}
+.hero-img.rondimg{width:220px;height:220px;border-radius:50%;border:6px solid #fff;top:calc(70px + env(safe-area-inset-top))}
+.dessus{margin:-28px -18px 0;position:relative;z-index:1;background:var(--bg);border-radius:28px 28px 0 0;padding:16px 18px 0;display:flex;flex-direction:column;gap:10px}
+.specs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.specs div{background:var(--card);border-radius:14px;padding:10px 4px;text-align:center}
+.specs b{display:block;font-size:15px}
+.basbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;padding:12px 16px calc(16px + env(safe-area-inset-bottom));background:var(--card);border-radius:24px 24px 0 0;box-shadow:0 -6px 20px rgba(14,15,13,.06);display:flex;gap:12px;align-items:center;z-index:20}
+.basbar.transp{background:linear-gradient(rgba(243,244,240,0),var(--bg) 30%);box-shadow:none;border-radius:0}
+
+/* Nav */
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));width:calc(100% - 36px);max-width:444px;height:66px;border-radius:24px;background:var(--ink);display:flex;align-items:center;justify-content:space-around;z-index:20}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dim);font-size:11px;font-weight:500;min-width:60px;position:relative}
+.nav a[aria-current=page]{color:var(--lime);font-weight:600}
+.nav a[aria-current=page] .ic{background:var(--lime);color:var(--ink);border-radius:999px;padding:2px 14px}
+.nav .ic{display:flex}
+.nav .pastille{top:-6px;right:8px}
+
+/* Suivi */
+.etapes{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.etapes .rail{position:absolute;left:12.5%;right:12.5%;top:21px;height:4px;border-radius:2px;background:var(--soft)}
+.etapes .plein{position:absolute;left:12.5%;top:21px;height:4px;border-radius:2px;background:var(--ink)}
+.etape{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;font-size:12px;text-align:center}
+.etape i{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--muted);font-style:normal}
+.etape.fait i{background:var(--ink);color:var(--lime)}
+.etape.encours i{background:var(--lime);color:var(--ink);border:2px solid var(--ink)}
+.etape.fait,.etape.encours{font-weight:600}
+
+/* Divers */
+.choix{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.choix.trois{grid-template-columns:repeat(3,minmax(0,1fr))}
+.opt{min-height:56px;border-radius:16px;border:1px solid var(--line);background:var(--card);padding:8px 12px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left}
+.choix.trois .opt{align-items:center;text-align:center;font-weight:600;font-size:13px}
+.opt[aria-checked=true]{border:2px solid var(--ink);background:var(--lime-soft)}
+.recap div{display:flex;justify-content:space-between;gap:10px}
+.recap .total{padding-top:8px;border-top:1px solid var(--line);font-weight:600}
+.article{display:flex;align-items:center;gap:12px;padding:12px 0}
+.article+.article{border-top:1px solid var(--line)}
+.vign{width:60px;height:60px;border-radius:16px;background:var(--lime-soft);display:flex;align-items:flex-end;justify-content:center;flex-shrink:0}
+.vign img{width:72px;margin-bottom:4px}
+.vign img.rondimg{width:50px;height:50px;border-radius:50%;margin-bottom:5px}
+.pas{display:flex;align-items:center;background:var(--bg);border-radius:999px}
+.pas button{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.pas button.plus{background:var(--ink);color:var(--lime)}
+.pas span{min-width:20px;text-align:center;font-weight:600}
+.code{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.code input{height:56px;border-radius:14px;border:2px solid var(--line);background:var(--card);text-align:center;font-size:22px;font-weight:700;width:100%}
+.code input:focus{border-color:var(--ink)}
+.tel{display:flex;align-items:center;height:56px;border-radius:16px;background:var(--card);border:2px solid var(--ink);overflow:hidden}
+.tel span{height:100%;padding:0 12px;display:flex;align-items:center;gap:6px;font-weight:600;border-right:1px solid var(--line)}
+.tel input{flex:1;height:100%;border:none;outline:none;padding:0 12px;font-size:16px;background:transparent}
+.menu a{display:flex;align-items:center;gap:12px;min-height:52px}
+.menu a+a{border-top:1px solid var(--line)}
+.menu .ico{width:34px;height:34px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;white-space:nowrap}
+.toast.vu{opacity:1;transform:translateX(-50%) translateY(0)}
+.vide{text-align:center;align-items:center;padding:32px 20px;gap:10px}
+.demo{font-size:12px;background:var(--lime-soft);border-radius:12px;padding:10px 12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media (min-width:520px){.app{box-shadow:0 0 0 1px rgba(0,0,0,.04),0 20px 60px rgba(0,0,0,.08)}}
+.nav[hidden]{display:none}
