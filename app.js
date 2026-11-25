@@ -68,7 +68,7 @@
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
       <img class="moto" src="img/cygnus-3.png" alt="">
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span style="font-size:12px;color:#C9CEC9">Yamaha, Kymco, SYM et PGO révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Yamaha, Kymco, SYM et PGO révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
@@ -115,7 +115,7 @@
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
     ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'GP', 'SYM Jet', 'VJR', 'PGO']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
-    <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--ink);color:var(--lime);border-color:var(--ink)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
+    <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--sel);color:var(--sel-txt);border-color:var(--sel)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
     <div id="grille" class="col" style="gap:4px">${grilleHtml()}</div></div>`;
@@ -188,9 +188,9 @@
   const LOGO_G = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
   const DEMO = !D.firebaseConfig;
   V.connexion = () => `<div class="ecran" style="padding-top:0">
-    <div class="hero" style="height:240px"><a href="#${ui.retour === 'paiement' ? 'panier' : 'compte'}" class="rond" style="position:relative;background:rgba(255,255,255,.12);color:#fff" aria-label="Retour">${ic('retour')}</a>
+    <div class="hero" style="height:240px"><a href="#${ui.retour === 'paiement' ? 'panier' : 'compte'}" class="rond" style="position:relative;background:var(--fort-ghost);color:var(--fort-txt)" aria-label="Retour">${ic('retour')}</a>
       <img src="img/logo.jpg" alt="Dagomotoshop" style="position:relative;width:60px;height:60px;border-radius:14px;margin-top:14px">
-      <p style="position:relative;color:#fff;font-weight:700;font-size:22px;line-height:1.2;max-width:210px;margin:12px 0 0">${ui.retour === 'paiement' ? 'Plus qu’une étape avant votre <span style="color:var(--lime)">réservation.</span>' : 'Retrouvez vos <span style="color:var(--lime)">commandes.</span>'}</p></div>
+      <p style="position:relative;color:var(--fort-txt);font-weight:700;font-size:22px;line-height:1.2;max-width:210px;margin:12px 0 0">${ui.retour === 'paiement' ? 'Plus qu’une étape avant votre <span class="surl">réservation.</span>' : 'Retrouvez vos <span class="surl">commandes.</span>'}</p></div>
     <img src="img/scooter.png" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(100px + env(safe-area-inset-top));width:176px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
     <div class="dessus" style="gap:12px;padding-top:22px">
       <div class="col" style="gap:4px"><h1 class="h2" style="font-size:20px">Connectez-vous</h1><span class="petit" style="font-size:13px">En un clic, sans mot de passe.</span></div>
@@ -238,12 +238,12 @@
     if (!c) return V.introuvable();
     return `<div class="ecran" style="padding-top:calc(40px + env(safe-area-inset-top))">
     <div class="col" style="align-items:center;text-align:center;gap:8px">
-      <span style="width:96px;height:96px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 12px var(--lime-soft);margin:12px 0 10px">${ic('check', 44, 'stroke-width="2.6"')}</span>
+      <span style="width:96px;height:96px;border-radius:50%;background:var(--lime);color:var(--on-lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 12px var(--lime-soft);margin:12px 0 10px">${ic('check', 44, 'stroke-width="2.6"')}</span>
       <h1 class="titre" style="font-size:26px">Réservation confirmée !</h1>
       <p class="petit" style="font-size:14px;margin:0;max-width:300px">Nous préparons votre commande et vous appelons au +261 ${esc(c.tel)} dès qu'elle est prête.</p></div>
-    <div class="carte ligne entre" style="background:var(--ink);color:#fff;border-radius:22px">
-      <div class="col"><span class="petit" style="color:var(--dim)">Code de retrait à présenter en boutique</span><b style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--lime)">${esc(c.code)}</b></div>
-      <button class="rond" style="background:rgba(255,255,255,.12);color:#fff" data-a="copier" data-id="${esc(c.code)}" aria-label="Copier le code">${ic('copie', 18)}</button></div>
+    <div class="carte ligne entre" style="background:var(--noir);color:var(--noir-txt);border-radius:22px">
+      <div class="col"><span class="petit" style="color:var(--noir-mut)">Code de retrait à présenter en boutique</span><b style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--lime)">${esc(c.code)}</b></div>
+      <button class="rond" style="background:rgba(255,255,255,.12);color:var(--noir-txt)" data-a="copier" data-id="${esc(c.code)}" aria-label="Copier le code">${ic('copie', 18)}</button></div>
     <div class="carte col" style="gap:9px;font-size:13px">
       <div class="ligne" style="gap:10px">${ic('panier', 18)}<span>${c.lignes.reduce((s, l) => s + l.q, 0)} article(s) · <b class="nw">${ar(c.total)}</b></span></div>
       <div class="ligne" style="gap:10px">${ic(c.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${c.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom} · ${esc(B.delaiRetrait)}`}</span></div>
@@ -273,12 +273,12 @@
       <button class="btn" data-a="aller-connexion" style="margin-top:6px">Se connecter</button></div>${menuCompte()}</div>`; }
     const n = commandes.length, f = n % 5;
     return `<div class="ecran"><h1 class="titre">Mon compte</h1>
-    <div class="carte col" style="background:var(--ink);color:#fff;border-radius:22px;gap:14px">
+    <div class="carte col" style="background:var(--noir);color:var(--noir-txt);border-radius:22px;gap:14px">
       <div class="ligne"><span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>
-        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--dim)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${n} commande(s)</span></div></div>
-      <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--dim)"><b style="color:var(--lime)">${f}</b> achat(s) sur 5</span></div>
-        <div role="progressbar" aria-label="Carte fidélité" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${f}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${[0, 1, 2, 3, 4].map((k) => `<span style="height:8px;border-radius:4px;background:${k < f ? 'var(--lime)' : '#3A3E3A'}"></span>`).join('')}</div>
-        <span class="petit" style="color:var(--dim)">Encore ${5 - f} achat(s) pour une révision offerte au garage.</span></div></div>
+        <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--noir-mut)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${n} commande(s)</span></div></div>
+      <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--noir-mut)"><b style="color:var(--lime)">${f}</b> achat(s) sur 5</span></div>
+        <div role="progressbar" aria-label="Carte fidélité" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${f}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${[0, 1, 2, 3, 4].map((k) => `<span style="height:8px;border-radius:4px;background:${k < f ? 'var(--lime)' : 'var(--noir-vide)'}"></span>`).join('')}</div>
+        <span class="petit" style="color:var(--noir-mut)">Encore ${5 - f} achat(s) pour une révision offerte au garage.</span></div></div>
     <div class="carte col" style="gap:4px"><h2 class="h2" style="font-size:15px">Mes commandes</h2>
       ${n ? commandes.slice().reverse().slice(0, 4).map((c) => `<a href="#suivi-${esc(c.code)}" class="ligne entre" style="min-height:52px;border-top:1px solid var(--line)"><span class="col"><b style="font-size:14px;font-weight:600">${esc(c.code)}</b><span class="petit">${esc(c.date)} · ${ar(c.total)}</span></span>
         <span class="badge" style="${c.statut === 3 ? 'background:var(--soft);color:var(--muted)' : ''}">${ETAPES[c.statut][0]}</span></a>`).join('') : '<span class="petit" style="padding:6px 0">Aucune commande pour le moment.</span>'}</div>
