@@ -1,6 +1,6 @@
 /* Service worker : garde l'app disponible hors connexion.
    Change VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version. */
-const VERSION = 'dms-v3';
+const VERSION = 'dms-v4';
 const FICHIERS = ['./', 'index.html', 'styles.css', 'app.js', 'donnees.js', 'icones.js', 'manifest.webmanifest',
   'img/logo.jpg', 'img/scooter.png', 'img/casque.png', 'img/pieces.png', 'img/icone-192.png', 'img/icone-512.png'];
 
