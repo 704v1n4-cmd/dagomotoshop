@@ -319,7 +319,7 @@
       <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
-      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [110, '110 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [110, '110 cc'], [115, '115 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
       </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
