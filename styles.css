@@ -88,7 +88,7 @@ label.lib{font-size:13px;font-weight:500}
 .basbar.transp{background:linear-gradient(rgba(243,244,240,0),var(--bg) 30%);box-shadow:none;border-radius:0}
 
 /* Nav */
-.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));width:calc(100% - 36px);max-width:444px;height:66px;border-radius:24px;background:var(--ink);display:flex;align-items:center;justify-content:space-around;z-index:20}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));width:calc(100% - 36px);max-width:444px;height:66px;border-radius:24px;background:rgba(14,15,13,.84);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 30px rgba(14,15,13,.22),inset 0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-around;z-index:20}
 .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dim);font-size:11px;font-weight:500;min-width:60px;position:relative}
 .nav a[aria-current=page]{color:var(--lime);font-weight:600}
 .nav a[aria-current=page] .ic{background:var(--lime);color:var(--ink);border-radius:999px;padding:2px 14px}
@@ -142,3 +142,33 @@ label.lib{font-size:13px;font-weight:500}
 .btn.google{gap:10px;height:54px;font-size:15px;font-weight:600}
 .ou{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:2px 0}
 .ou::before,.ou::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* Inspirations Refero : panneaux du bas, filtres, stock, squelettes */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#feuille{display:none}#feuille.vu{display:block}
+.voile{position:fixed;inset:0;background:rgba(14,15,13,.45);z-index:40;animation:fondu .2s ease-out}
+.feuille{position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:41;width:100%;max-width:480px;max-height:88dvh;overflow:auto;background:var(--card);border-radius:24px 24px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(14,15,13,.2);animation:monte .26s cubic-bezier(.2,.8,.2,1)}
+.poignee{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+@keyframes monte{from{transform:translate(-50%,40px);opacity:.4}}
+@keyframes fondu{from{opacity:0}}
+.seg{display:grid;gap:6px}
+.seg button{min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.seg button[aria-pressed=true] .petit{color:var(--dim)}
+.stock{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#8A4B00;background:#FFF1DC;border-radius:999px;padding:3px 9px;align-self:flex-start}
+.stock::before{content:"";width:7px;height:7px;border-radius:50%;background:#E58A00}
+.stock.ok{color:var(--ok);background:var(--lime-soft)}.stock.ok::before{background:var(--ok)}
+.stock.rupture{color:var(--muted);background:var(--soft)}.stock.rupture::before{background:var(--dim)}
+.prod .stock{margin-top:6px}
+.mini{flex:0 0 132px;background:var(--card);border-radius:18px;padding:8px 8px 10px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.mini .boite{height:78px;border-radius:12px;background:var(--soft);display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px}
+.mini .boite img{width:96px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.2))}
+.mini .boite img.rondimg{width:64px;height:64px;border-radius:50%;border:3px solid #fff;margin-bottom:6px;filter:none}
+.mini b{font-weight:600}
+/* Squelette : lueur tant que la photo n'est pas chargée */
+.boite.sq-att:not(.ok),.vign.sq-att:not(.ok){background:linear-gradient(100deg,var(--soft) 30%,#F7F8F5 50%,var(--soft) 70%);background-size:220% 100%;animation:lueur 1.2s linear infinite}
+img.sq:not(.ok){opacity:0}img.sq.ok{opacity:1;transition:opacity .25s}
+@keyframes lueur{to{background-position:-120% 0}}
+@media (prefers-reduced-motion:reduce){.feuille,.voile{animation:none}.boite.sq-att:not(.ok),.vign.sq-att:not(.ok){animation:none}}
+svg{flex-shrink:0}
+[role=tab].puce{padding:0 8px;gap:5px;font-size:12.5px}

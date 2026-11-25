@@ -17,8 +17,10 @@
   let client = store.get('client', null);
   let commandes = store.get('commandes', []);
   let favoris = store.get('favoris', []);
+  let recentes = store.get('recentes', []);
+  const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+    paiement: 'mvola', f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); };
 
   /* ---------- Outils ---------- */
@@ -28,7 +30,10 @@
   const fmg = (n) => grp(n * 5) + ' Fmg';
   const produit = (id) => D.produits.find((p) => p.id === id);
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
-  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy">`;
+  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy" onload="this.classList.add('ok');this.parentNode.classList.add('ok')" onerror="this.classList.add('ok');this.parentNode.classList.add('ok')">`;
+  /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
+  const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
+  const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
   const rondPanier = () => `<a href="#panier" class="rond" aria-label="Panier, ${nbPanier()} article(s)">${ic('panier')}${nbPanier() ? `<span class="pastille">${nbPanier()}</span>` : ''}</a>`;
@@ -37,7 +42,7 @@
   const toast = (t) => { $toast.textContent = t; $toast.classList.add('vu'); clearTimeout(toastT); toastT = setTimeout(() => $toast.classList.remove('vu'), 1800); };
 
   function totaux() {
-    const lignes = Object.entries(panier).map(([id, q]) => ({ p: produit(id), q })).filter((l) => l.p && l.q > 0);
+    const lignes = Object.entries(panier).map(([cle, q]) => { const d = decoupe(cle); return { cle, p: produit(d.id), taille: d.taille, q }; }).filter((l) => l.p && l.q > 0);
     const sous = lignes.reduce((s, l) => s + l.p.prix * l.q, 0);
     const remise = ui.promo ? Math.round(sous * D.codesPromo[ui.promo] / 1000) * 1000 : 0;
     const livraison = ui.mode === 'livraison' && lignes.length ? B.fraisLivraison : 0;
@@ -73,20 +78,31 @@
   };
 
   const carteProd = (p) => `<div class="prod">
-    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}
+    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span></a>
     <div class="ligne entre" style="margin-top:4px"><span class="prix">${ar(p.prix)}</span>
-    <button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button></div></div>`;
+    ${p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
+    ${p.stock != null && p.stock <= 2 ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
+  const TRANCHES = { scooters: [['-3500000', 'Moins de 3,5 M'], ['3500000-4500000', '3,5 à 4,5 M'], ['4500000-', 'Plus de 4,5 M']],
+    autre: [['-20000', 'Moins de 20 000'], ['20000-100000', '20 000 à 100 000'], ['100000-', 'Plus de 100 000']] };
+  const nbFiltres = () => (ui.f.prix ? 1 : 0) + (ui.f.cyl ? 1 : 0) + (ui.f.promo ? 1 : 0) + (ui.f.stock ? 1 : 0);
+  const passeFiltres = (p) => {
+    if (ui.f.prix) { const [a, b] = ui.f.prix.split('-'); if (a && p.prix < +a) return false; if (b && p.prix >= +b) return false; }
+    if (ui.f.cyl && p.cylindree !== +ui.f.cyl) return false;
+    if (ui.f.promo && !p.ancienPrix) return false;
+    if (ui.f.stock && !(p.stock > 0)) return false;
+    return true;
+  };
   const listeCatalogue = () => {
     const q = ui.recherche.trim().toLowerCase();
-    let l = D.produits.filter((p) => q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat);
+    let l = D.produits.filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
     l = l.slice().sort((a, b) => ui.tri === 'asc' ? a.prix - b.prix : b.prix - a.prix);
     return { l, q };
   };
   const grilleHtml = () => {
     const { l, q } = listeCatalogue();
     return `<p class="petit" style="margin:0;font-size:13px"><b style="color:var(--ink)">${l.length}</b> résultat(s)${q ? ` pour « ${esc(ui.recherche)} »` : ''}</p>
-      ${l.length ? `<div class="grille">${l.map(carteProd).join('')}</div>` : `<div class="carte col vide"><b>Aucun produit trouvé</b><span class="petit">Essayez un autre mot, ou appelez-nous : nous commandons aussi sur demande.</span></div>`}`;
+      ${l.length ? `<div class="grille">${l.map(carteProd).join('')}</div>` : `<div class="carte col vide"><b>Aucun produit trouvé</b><span class="petit">Essayez un autre mot ou retirez un filtre. Nous commandons aussi sur demande.</span>${nbFiltres() ? '<button class="btn clair" data-a="filtres-raz" style="height:46px;margin-top:6px">Retirer les filtres</button>' : ''}</div>`}`;
   };
   V.catalogue = (cat) => {
     if (cat && D.categories.some((c) => c.id === cat)) ui.cat = cat;
@@ -95,14 +111,22 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
-    <div class="ligne entre"><label class="petit" for="tri" style="font-size:13px">Trier par</label>
-      <select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
+    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Casque', 'Plaquettes', '125 cc', 'Courroie', 'Bougie']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
+    <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--ink);color:var(--lime);border-color:var(--ink)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
+      <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
     <div id="grille" class="col" style="gap:4px">${grilleHtml()}</div></div>`;
   };
 
+  const similaires = (p) => {
+    const l = D.produits.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
+    if (!l.length) return '';
+    return `<div class="col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Vous aimerez aussi</h2><a href="#catalogue-${p.cat}" class="petit" style="font-size:13px;min-height:40px;display:flex;align-items:center">Tout voir</a></div>
+      <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${ar(x.prix)}</span></a>`).join('')}</div></div>`;
+  };
   V.produit = (id) => {
     const p = produit(id);
+    if (ui.produitVu !== id) { ui.produitVu = id; ui.taille = ''; ui.tailleErreur = false; }
     if (!p) return V.introuvable();
     const fav = favoris.includes(p.id);
     const eco = p.ancienPrix ? p.ancienPrix - p.prix : 0;
@@ -117,16 +141,20 @@
         <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${ar(p.prix)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft)">-${grp(eco)} Ar</span>` : ''}</div>
-        <span class="petit">soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces</span></div>
+        <span class="petit">soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces</span>
+        ${p.stock != null ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
+      ${p.tailles ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Taille</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? 'Choisissez une taille' : 'Tour de tête en cm'}</span></div>
+        <div class="seg" role="radiogroup" aria-label="Taille" style="grid-template-columns:repeat(${p.tailles.length},minmax(0,1fr))">${p.tailles.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${t}"><b>${t}</b><span class="petit" style="font-size:11px">${cm}</span></button>`).join('')}</div></div>` : ''}
       ${p.specs ? `<div class="specs">${p.specs.map(([v, l]) => `<div><b>${esc(v)}</b><span class="petit" style="font-size:11px">${esc(l)}</span></div>`).join('')}</div>` : ''}
       <div class="carte ligne entre petit" style="padding:12px 16px;font-size:13px;flex-wrap:wrap;gap:8px"><span class="ligne" style="gap:8px">${ic('pin', 18)}Retrait ${esc(B.delaiRetrait)}</span><span class="ligne" style="gap:8px">${ic('horloge', 18)}${esc(B.horaires)}</span></div>
       <div class="carte col" style="gap:6px"><h2 class="h2" style="font-size:15px">Description</h2><p class="petit" style="margin:0;font-size:13px;line-height:1.5">${esc(p.description)}</p></div>
+      ${similaires(p)}
       <div class="carte ligne" style="padding:12px 16px"><img src="img/logo.jpg" alt="" style="width:44px;height:44px;border-radius:10px">
         <div class="col" style="flex:1"><b style="font-weight:600">${B.nom}</b><span class="petit">${esc(B.ville)} · ${esc(B.telephone)}</span></div>
         <a class="rond lime" href="tel:${B.telephone.replace(/\s/g, '')}" aria-label="Appeler la boutique au ${esc(B.telephone)}">${ic('tel')}</a></div>
     </div></div>
     <div class="basbar">${rondPanier().replace('class="rond"', 'class="rond" style="width:54px;height:54px;background:var(--bg)"')}
-      <button class="btn" data-a="ajouter-aller" data-id="${p.id}">Ajouter au panier</button></div>`;
+      <button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button></div>`;
   };
 
   V.panier = () => {
@@ -136,11 +164,11 @@
       <b style="font-size:17px">Votre panier est vide</b><span class="petit" style="font-size:13px">Scooters, pièces et casques vous attendent dans le catalogue.</span>
       <a href="#catalogue" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Voir le catalogue</a></div></div>`;
     return `<div class="ecran">${tete}
-    <div class="carte" style="padding:4px 14px">${t.lignes.map(({ p, q }) => `<div class="article">
-      <a href="#produit-${p.id}" class="vign">${img(p)}</a>
-      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
-      <div class="pas"><button data-a="moins" data-id="${p.id}" aria-label="${q === 1 ? 'Retirer' : 'Diminuer la quantité de'} ${esc(p.nom)}">${ic('moins', 16)}</button><span aria-live="polite">${q}</span>
-      <button class="plus" data-a="plus" data-id="${p.id}" aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
+    <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
+      <a href="#produit-${p.id}" class="vign sq-att">${img(p)}</a>
+      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}${taille ? ' · Taille ' + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
+      <div class="pas"><button data-a="moins" data-id="${esc(cle)}" aria-label="${q === 1 ? 'Retirer' : 'Diminuer la quantité de'} ${esc(p.nom)}">${ic('moins', 16)}</button><span aria-live="polite">${q}</span>
+      <button class="plus" data-a="plus" data-id="${esc(cle)}" aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
     <div class="choix" role="radiogroup" aria-label="Mode de retrait">
       <button class="opt" role="radio" aria-checked="${ui.mode === 'boutique'}" data-a="mode" data-id="boutique"><b style="font-size:14px;font-weight:600">Retrait boutique</b><span class="petit">Gratuit · ${esc(B.ville)}</span></button>
       <button class="opt" role="radio" aria-checked="${ui.mode === 'livraison'}" data-a="mode" data-id="livraison"><b style="font-size:14px;font-weight:600">Livraison Tana</b><span class="petit">${ar(B.fraisLivraison)} · sous 48 h</span></button></div>
@@ -184,7 +212,7 @@
     if (!client) { ui.retour = 'paiement'; location.hash = 'connexion'; return ''; }
     return `<div class="ecran">${entete('Paiement', 'panier')}
     <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:15px">Votre commande</h2>
-      ${t.lignes.map(({ p, q }) => `<div class="ligne"><span class="vign" style="width:48px;height:48px;border-radius:12px">${img(p)}</span><span style="flex:1;font-size:14px">${esc(p.nom)} <span class="petit">× ${q}</span></span><span class="prix" style="font-size:14px">${ar(p.prix * q)}</span></div>`).join('')}</div>
+      ${t.lignes.map(({ p, q, taille }) => `<div class="ligne"><span class="vign" style="width:48px;height:48px;border-radius:12px">${img(p)}</span><span style="flex:1;font-size:14px">${esc(p.nom)}${taille ? ' (' + esc(taille) + ')' : ''} <span class="petit">× ${q}</span></span><span class="prix" style="font-size:14px">${ar(p.prix * q)}</span></div>`).join('')}</div>
     <div class="carte ligne petit" style="font-size:13px;padding:12px 16px">${ic(ui.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${ui.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom}, ${esc(B.ville)} · ${esc(B.delaiRetrait)}`}</span></div>
     <div class="col" style="gap:6px"><label class="lib" for="telcmd" style="font-size:15px;font-weight:600">Numéro pour vous joindre</label>
       <div class="tel"${ui.telErreur ? ' style="border-color:var(--err)"' : ''}><span><svg width="20" height="14" viewBox="0 0 30 20" aria-hidden="true"><rect width="10" height="20" fill="#fff"/><rect x="10" width="20" height="10" fill="#FC3D32"/><rect x="10" y="10" width="20" height="10" fill="#007E3A"/><rect x=".5" y=".5" width="29" height="19" fill="none" stroke="#E2E5DF"/></svg>+261</span>
@@ -228,7 +256,7 @@
       <div class="etapes"><span class="rail"></span><span class="plein" style="width:${s * 25}%"></span>
       ${ETAPES.map(([l, i], k) => `<div class="etape ${k < s || s === 3 ? 'fait' : k === s ? 'encours' : ''}"><i>${ic(i)}</i>${l}</div>`).join('')}</div>
       <div class="ligne" style="background:var(--bg);border-radius:14px;padding:12px">${ic('horloge', 22)}<span style="font-size:13px">${MSG[s]}</span></div></div>
-    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">× ${l.q}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
+    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${l.taille ? 'Taille ' + esc(l.taille) + ' · ' : ''}× ${l.q}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
       <div class="ligne entre" style="padding:12px 0;border-top:1px solid var(--line);font-weight:600"><span>Total</span><span class="prix">${ar(c.total)}</span></div></div>
     <p class="petit" style="margin:0">Le statut est mis à jour par la boutique.</p>
     ${s < 3 ? `<button class="btn clair" data-a="demo-statut" data-id="${esc(c.code)}">Démo : passer à l'étape suivante</button>` : ''}</div>`;
@@ -260,6 +288,41 @@
 
   V.introuvable = () => `<div class="ecran">${entete('Introuvable', 'accueil')}<div class="carte col vide"><b>Cette page n'existe pas ou plus.</b><a class="btn" href="#accueil" style="margin-top:8px">Retour à l'accueil</a></div></div>`;
 
+  /* ---------- Panneaux du bas (ajout au panier, filtres) ---------- */
+  const $feuille = document.getElementById('feuille');
+  let feuilleAvant = null, feuilleType = '';
+  function ouvrirFeuille(type, html, titre) {
+    feuilleType = type;
+    if (!$feuille.classList.contains('vu')) feuilleAvant = document.activeElement;
+    $feuille.innerHTML = `<div class="voile" data-a="fermer-feuille"></div><div class="feuille" role="dialog" aria-modal="true" aria-label="${titre}"><div class="poignee"></div>${html}</div>`;
+    $feuille.classList.add('vu'); document.body.style.overflow = 'hidden';
+    const f = $feuille.querySelector('button,a,input'); if (f) f.focus({ preventScroll: true });
+  }
+  function fermerFeuille() {
+    if (!$feuille.classList.contains('vu')) return;
+    $feuille.classList.remove('vu'); $feuille.innerHTML = ''; feuilleType = ''; document.body.style.overflow = '';
+    if (feuilleAvant && document.contains(feuilleAvant)) feuilleAvant.focus({ preventScroll: true });
+  }
+  const feuilleAjout = (p, taille) => `<div class="ligne" style="gap:14px"><span class="vign" style="width:72px;height:72px">${img(p)}</span>
+      <div class="col" style="flex:1"><span class="ligne petit" style="gap:6px;color:var(--ok);font-weight:600">${ic('check', 16)}Ajouté au panier</span><b style="font-size:16px;font-weight:600">${esc(p.nom)}${taille ? ' · ' + esc(taille) : ''}</b><span class="prix">${ar(p.prix)}</span></div></div>
+    <div class="ligne entre petit" style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:13px"><span>Panier : ${nbPanier()} article(s)</span><b class="nw" style="color:var(--ink)">${ar(totaux().total)}</b></div>
+    <div class="col" style="gap:10px"><a class="btn" href="#panier" data-a="voir-panier">Voir le panier</a><button class="btn clair" data-a="fermer-feuille">Continuer mes achats</button></div>`;
+  const feuilleFiltres = () => {
+    const nb = listeCatalogue().l.length;
+    const tr = ui.cat === 'scooters' ? TRANCHES.scooters : TRANCHES.autre;
+    const groupe = (titre, cle, opts) => `<div class="col" style="gap:8px"><h3 class="h2" style="font-size:14px">${titre}</h3><div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button aria-pressed="${String(ui.f[cle]) === String(v)}" data-a="filtre" data-id="${cle}:${v}">${l}</button>`).join('')}</div></div>`;
+    return `<div class="ligne entre" style="margin-bottom:12px"><button data-a="filtres-raz" style="min-height:44px;font-weight:500;color:var(--muted)">Réinitialiser</button>
+      <b style="font-size:16px">${nbFiltres() ? nbFiltres() + ' filtre(s)' : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
+      <div class="col" style="gap:16px">
+      ${groupe('Prix (Ariary)', 'prix', tr)}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[50, '50 cc'], [125, '125 cc'], [150, '150 cc']]) : ''}
+      ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
+      ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
+      </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">Voir ${nb} résultat(s)</button>`;
+  };
+  const majFiltres = () => { if (feuilleType === 'filtres') ouvrirFeuille('filtres', feuilleFiltres(), 'Filtres'); const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerFeuille(); });
+
   /* ---------- Navigation ---------- */
   const AVEC_NAV = ['accueil', 'catalogue', 'compte'];
   let derniere = '';
@@ -269,6 +332,7 @@
     const nom = m ? m[1] : 'introuvable';
     const html = (V[nom] || V.introuvable)(m && m[2]);
     if (!html) return; // redirection en cours
+    fermerFeuille();
     $app.innerHTML = html;
     const onglet = nom === 'panier' ? 'panier' : nom;
     $nav.hidden = !AVEC_NAV.includes(nom);
@@ -282,12 +346,24 @@
 
   /* ---------- Actions ---------- */
   const actions = {
-    ajouter(id) { panier[id] = (panier[id] || 0) + 1; sauver(); toast('Ajouté au panier'); rafraichir(); },
-    'ajouter-aller'(id) { panier[id] = (panier[id] || 0) + 1; sauver(); aller('panier'); },
+    ajouter(id) {
+      const p = produit(id); if (!p) return;
+      if (p.tailles && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
+      const cle = p.tailles ? id + '@' + ui.taille : id;
+      panier[cle] = (panier[cle] || 0) + 1; sauver(); rafraichir();
+      ouvrirFeuille('ajout', feuilleAjout(p, p.tailles ? ui.taille : ''), 'Ajouté au panier');
+    },
+    taille(t) { ui.taille = t; ui.tailleErreur = false; rafraichir(); },
+    'voir-panier'() { fermerFeuille(); aller('panier'); },
+    'fermer-feuille'() { fermerFeuille(); rafraichir(); },
+    filtres() { ouvrirFeuille('filtres', feuilleFiltres(), 'Filtres'); },
+    filtre(v) { const [cle, val] = v.split(':'); const actuel = String(ui.f[cle]); ui.f[cle] = actuel === val ? null : (val === 'true' ? true : val); majFiltres(); },
+    'filtres-raz'() { ui.f = { prix: null, cyl: null, promo: null, stock: null }; majFiltres(); if (feuilleType !== 'filtres') rafraichir(); },
+    suggestion(t) { ui.recherche = t; memoRecherche(t); rafraichir(); },
     plus(id) { panier[id] = (panier[id] || 0) + 1; sauver(); rafraichir(); },
     moins(id) { panier[id] = (panier[id] || 0) - 1; if (panier[id] <= 0) delete panier[id]; sauver(); rafraichir(); },
     vider() { panier = {}; sauver(); rafraichir(); },
-    cat(id) { ui.cat = id; ui.recherche = ''; aller('catalogue-' + id); },
+    cat(id) { ui.cat = id; ui.recherche = ''; ui.f = { prix: null, cyl: null, promo: null, stock: null }; aller('catalogue-' + id); },
     mode(id) { ui.mode = id; rafraichir(); },
     'payer-par'(id) { ui.paiement = id; rafraichir(); },
     retour() { if (history.length > 1) history.back(); else aller('accueil'); },
@@ -318,7 +394,7 @@
       client.tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); ui.telErreur = ''; ui.telCmd = null;
       const t = totaux();
       const num = String(128 + commandes.length).padStart(4, '0');
-      const c = { code: 'DMS-' + num, date: new Date().toLocaleDateString('fr-FR'), lignes: t.lignes.map(({ p, q }) => ({ id: p.id, q, prix: p.prix })),
+      const c = { code: 'DMS-' + num, date: new Date().toLocaleDateString('fr-FR'), lignes: t.lignes.map(({ p, q, taille }) => ({ id: p.id, taille, q, prix: p.prix })),
         total: t.total, mode: ui.mode, paiement: ui.paiement, statut: 0, tel: client.tel };
       commandes.push(c); panier = {}; ui.promo = null; ui.promoSaisie = ''; ui.promoMsg = ''; sauver();
       aller('confirmation-' + c.code);
@@ -333,9 +409,10 @@
     actions[el.dataset.a](el.dataset.id);
   });
 
+  let memoT;
   document.addEventListener('input', (e) => {
     const k = e.target.dataset.in;
-    if (k === 'recherche') { ui.recherche = e.target.value; const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml();
+    if (k === 'recherche') { ui.recherche = e.target.value; clearTimeout(memoT); memoT = setTimeout(() => memoRecherche(ui.recherche), 1200); const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml();
       document.querySelectorAll('[role=tab]').forEach((b) => b.setAttribute('aria-selected', String(!ui.recherche && b.dataset.id === ui.cat))); }
     if (k === 'tri') { ui.tri = e.target.value; const g = document.getElementById('grille'); if (g) g.innerHTML = grilleHtml(); }
     if (k === 'promo') ui.promoSaisie = e.target.value;
@@ -363,7 +440,7 @@
   document.addEventListener('submit', (e) => {
     const f = e.target.dataset.form; if (!f) return;
     e.preventDefault();
-    if (f === 'recherche') { ui.recherche = e.target.q.value; aller('catalogue'); }
+    if (f === 'recherche') { ui.recherche = e.target.q.value; memoRecherche(ui.recherche); aller('catalogue'); }
     if (f === 'promo') {
       const code = ui.promoSaisie.trim().toUpperCase();
       if (D.codesPromo[code]) { ui.promo = code; ui.promoMsg = `Code ${code} appliqué : -${Math.round(D.codesPromo[code] * 100)} % sur la commande.`; }

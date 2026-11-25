@@ -1,7 +1,7 @@
 /* Service worker : garde l'app disponible hors connexion.
    Change VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version. */
-const VERSION = 'dms-v4';
-const FICHIERS = ['./', 'index.html', 'styles.css?v=4', 'app.js?v=4', 'donnees.js?v=4', 'icones.js?v=4', 'manifest.webmanifest',
+const VERSION = 'dms-v5';
+const FICHIERS = ['./', 'index.html', 'styles.css?v=5', 'app.js?v=5', 'donnees.js?v=5', 'icones.js?v=5', 'manifest.webmanifest',
   'img/logo.jpg', 'img/scooter.png', 'img/casque.png', 'img/pieces.png', 'img/icone-192.png', 'img/icone-512.png'];
 
 self.addEventListener('install', (e) => {
