@@ -18,10 +18,12 @@
   let commandes = store.get('commandes', []);
   let favoris = store.get('favoris', []);
   let recentes = store.get('recentes', []);
+  /* Annonces de pièces entre particuliers. En démo : stockées sur ce téléphone ; avec Firebase : base partagée. */
+  let annonces = store.get('annonces', null) || D.annoncesDemo.map((x) => Object.assign({}, x));
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
-  const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); };
+    paiement: 'mvola', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photo: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+  const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); };
 
   /* ---------- Outils ---------- */
   const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
@@ -29,9 +31,15 @@
   const grp = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   const ar = (n) => grp(n) + ' Ar';
   const fmg = (n) => grp(n * 5) + ' Fmg';
-  const produit = (id) => D.produits.find((p) => p.id === id);
+  const PP = D.particuliers;
+  const acompteDe = (prix) => Math.round(prix * PP.acompte / 100) * 100;
+  const netVendeur = (prix) => Math.round(prix * (1 - PP.commission) / 100) * 100;
+  const deAnnonce = (x) => ({ id: x.id, cat: 'occasion', nom: x.titre, detail: x.compat + ' · ' + x.etatPiece, prix: x.prix, stock: x.etat === 'en_ligne' ? 1 : 0,
+    img: x.photo, rond: /^img\//.test(x.photo), photoReelle: !/^img\//.test(x.photo), particulier: true, etatAnnonce: x.etat, description: x.description || 'Pièce proposée par un particulier.' });
+  const tous = () => D.produits.concat(annonces.filter((x) => x.etat === 'en_ligne').map(deAnnonce));
+  const produit = (id) => { const p = D.produits.find((x) => x.id === id); if (p) return p; const x = annonces.find((y) => y.id === id); return x ? deAnnonce(x) : undefined; };
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
-  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}" loading="lazy">`;
+  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
@@ -48,15 +56,22 @@
   function totaux() {
     const lignes = Object.entries(panier).map(([cle, q]) => { const d = decoupe(cle); return { cle, p: produit(d.id), taille: d.taille, q }; }).filter((l) => l.p && l.q > 0);
     const sous = lignes.reduce((s, l) => s + l.p.prix * l.q, 0);
-    const remise = ui.promo ? Math.round(sous * D.codesPromo[ui.promo] / 1000) * 1000 : 0;
+    const part = lignes.filter((l) => l.p.particulier);
+    if (part.length) ui.mode = 'boutique'; // pièces de particuliers : retrait au magasin uniquement
+    const sousBoutique = lignes.filter((l) => !l.p.particulier).reduce((s, l) => s + l.p.prix * l.q, 0);
+    const remise = ui.promo ? Math.round(sousBoutique * D.codesPromo[ui.promo] / 1000) * 1000 : 0;
     const livraison = ui.mode === 'livraison' && lignes.length ? B.fraisLivraison : 0;
-    return { lignes, sous, remise, livraison, total: sous - remise + livraison, n: lignes.reduce((s, l) => s + l.q, 0) };
+    const acompte = part.reduce((s, l) => s + acompteDe(l.p.prix) * l.q, 0);
+    const resteParticuliers = part.reduce((s, l) => s + l.p.prix * l.q, 0) - acompte;
+    return { lignes, sous, remise, livraison, total: sous - remise + livraison, n: lignes.reduce((s, l) => s + l.q, 0), acompte, resteParticuliers, aPart: part.length > 0 };
   }
   const recap = (t) => `<div class="carte col recap" style="gap:7px">
     <div><span class="petit" style="font-size:14px">Sous-total</span><span class="nw">${ar(t.sous)}</span></div>
     <div><span class="petit" style="font-size:14px">Remise${ui.promo ? ' (' + ui.promo + ')' : ''}</span><span class="nw">${t.remise ? '- ' + ar(t.remise) : '0 Ar'}</span></div>
     <div><span class="petit" style="font-size:14px">${ui.mode === 'livraison' ? 'Livraison Tana' : 'Retrait boutique'}</span><span class="nw">${t.livraison ? ar(t.livraison) : 'Gratuit'}</span></div>
-    <div class="total"><span>Total</span><span class="col" style="align-items:flex-end"><span class="prix" style="font-size:18px">${ar(t.total)}</span><span class="petit nw">soit ${fmg(t.total)}</span></span></div></div>`;
+    <div class="total"><span>Total</span><span class="col" style="align-items:flex-end"><span class="prix" style="font-size:18px">${ar(t.total)}</span><span class="petit nw">soit ${fmg(t.total)}</span></span></div>
+    ${t.aPart ? `<div class="particuliers-recap"><span class="petit">Pièces de particuliers : acompte maintenant</span><span class="nw" style="font-weight:600">${ar(t.acompte)}</span></div>
+    <div class="particuliers-recap"><span class="petit">Reste à payer au retrait, si vous gardez la pièce</span><span class="nw">${ar(t.resteParticuliers)}</span></div>` : ''}</div>`;
 
   /* ---------- Écrans ---------- */
   const V = {};
@@ -77,15 +92,17 @@
       ${img(p, 'vis')}${p.badge ? `<span class="sticker">${esc(p.badge)}</span>` : ''}
       <span class="petit">${esc(p.detail)}</span><b style="font-size:${i === 0 ? 17 : 16}px;font-weight:600">${esc(p.nom)}</b>
       <span class="ligne" style="gap:8px;align-items:baseline"><span class="prix">${prixTxt(p)}</span>${p.ancienPrix ? `<span class="barre">${grp(p.ancienPrix)}</span>` : ''}</span></a>`).join('')}</div>
+    <a href="#vendre" class="carte ligne vendre-promo"><span class="rond lime" style="width:48px;height:48px">${ic('etiquette', 22)}</span>
+      <span class="col" style="flex:1"><b style="font-size:15px;font-weight:600">Des pièces en trop ?</b><span class="petit">Vendez-les ici. Retrait au magasin, vous êtes payé dès la vente.</span></span>${ic('fleche', 18)}</a>
   </div>`;
   };
 
   const carteProd = (p) => `<div class="prod">
-    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}
+    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span></a>
     <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixTxt(p)}</span>
-    ${!p.prix ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
-    ${p.stock != null && p.stock <= 2 ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
+    ${!p.prix || p.particulier ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
+    ${p.stock != null && p.stock <= 2 && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
   const TRANCHES = { scooters: [['-3500000', 'Moins de 3,5 M'], ['3500000-4500000', '3,5 à 4,5 M'], ['4500000-', 'Plus de 4,5 M']],
     autre: [['-20000', 'Moins de 20 000'], ['20000-100000', '20 000 à 100 000'], ['100000-', 'Plus de 100 000']] };
   const nbFiltres = () => (ui.f.prix ? 1 : 0) + (ui.f.cyl ? 1 : 0) + (ui.f.promo ? 1 : 0) + (ui.f.stock ? 1 : 0);
@@ -99,7 +116,7 @@
   };
   const listeCatalogue = () => {
     const q = ui.recherche.trim().toLowerCase();
-    let l = D.produits.filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
+    let l = tous().filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
     l = l.slice().sort((a, b) => { const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
   };
@@ -114,8 +131,11 @@
     <div class="ligne entre"><h1 class="titre">Catalogue</h1>${rondPanier()}</div>
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
-      ${D.categories.map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
-    ${ui.recherche ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'GP', 'SYM Jet', 'VJR', 'PGO']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
+      ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
+    <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
+    ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
+      <span class="ligne" style="gap:14px"><a href="#vendre" class="petit" style="font-weight:600;color:var(--ink);text-decoration:underline;min-height:40px;display:flex;align-items:center">Vendre une pièce</a><a href="#conditions" class="petit" style="text-decoration:underline;min-height:40px;display:flex;align-items:center">Conditions</a></span></div>` : ''}
+    ${ui.recherche || ui.cat === 'occasion' ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'GP', 'SYM Jet', 'VJR', 'PGO']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--sel);color:var(--sel-txt);border-color:var(--sel)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
         <option value="asc"${ui.tri === 'asc' ? ' selected' : ''}>Prix croissant</option><option value="desc"${ui.tri === 'desc' ? ' selected' : ''}>Prix décroissant</option></select></div>
@@ -123,7 +143,7 @@
   };
 
   const similaires = (p) => {
-    const l = D.produits.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
+    const l = tous().filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
     if (!l.length) return '';
     return `<div class="col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Vous aimerez aussi</h2><a href="#catalogue-${p.cat}" class="petit" style="font-size:13px;min-height:40px;display:flex;align-items:center">Tout voir</a></div>
       <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${prixTxt(x)}</span></a>`).join('')}</div></div>`;
@@ -140,19 +160,22 @@
       <div class="ligne entre" style="position:relative;z-index:4"><button class="rond" data-a="retour" aria-label="Retour">${ic('retour')}</button>
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
       <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div>
-      <span class="mention-photo">Photo non contractuelle</span></div>
+      <span class="mention-photo">${p.particulier ? 'Photo du vendeur' : 'Photo non contractuelle'}</span></div>
     ${img(p, 'hero-img')}
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
         <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
-        <span class="petit">${p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
-        ${p.stock != null ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
+        <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
+        ${p.stock != null && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
+      ${p.particulier ? `<div class="carte col avert" style="gap:8px"><span class="badge part" style="align-self:flex-start">${ic('etiquette', 14)}Vendu par un particulier · en l'état</span>
+        <p class="petit" style="margin:0;font-size:13px;line-height:1.5">${B.nom} sert seulement d'intermédiaire : la boutique ne contrôle pas et ne garantit pas cette pièce. Vous l'examinez au comptoir avant de payer le reste ; si elle ne vous convient pas, vous la refusez et votre acompte est remboursé.</p>
+        <a href="#conditions" class="petit" style="text-decoration:underline;min-height:36px;display:flex;align-items:center">Conditions de vente entre particuliers</a></div>` : ''}
       ${choix ? `<div class="carte col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">${choix.titre}</h2><span class="petit" role="status" style="color:${ui.tailleErreur ? 'var(--err)' : 'var(--muted)'}">${ui.tailleErreur ? choix.erreur : choix.aide}</span></div>
         <div class="seg" role="radiogroup" aria-label="${choix.titre}" style="grid-template-columns:repeat(${Math.min(choix.liste.length, 4)},minmax(0,1fr))">${choix.liste.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${esc(t)}"><b>${esc(t)}</b>${cm ? `<span class="petit" style="font-size:11px">${esc(cm)}</span>` : ''}</button>`).join('')}</div></div>` : ''}
       ${p.specs ? `<div class="specs">${p.specs.map(([v, l]) => `<div><b>${esc(v)}</b><span class="petit" style="font-size:11px">${esc(l)}</span></div>`).join('')}</div>` : ''}
-      <div class="carte ligne entre petit" style="padding:12px 16px;font-size:13px;flex-wrap:wrap;gap:8px"><span class="ligne" style="gap:8px">${ic('pin', 18)}Retrait ${esc(B.delaiRetrait)}</span><span class="ligne" style="gap:8px">${ic('horloge', 18)}${esc(B.horaires)}</span></div>
+      <div class="carte ligne entre petit" style="padding:12px 16px;font-size:13px;flex-wrap:wrap;gap:8px"><span class="ligne" style="gap:8px">${ic('pin', 18)}${p.particulier ? 'Retrait au magasin uniquement' : 'Retrait ' + esc(B.delaiRetrait)}</span><span class="ligne" style="gap:8px">${ic('horloge', 18)}${esc(B.horaires)}</span></div>
       <div class="carte col" style="gap:6px"><h2 class="h2" style="font-size:15px">Description</h2><p class="petit" style="margin:0;font-size:13px;line-height:1.5">${esc(p.description)}</p></div>
       ${similaires(p)}
       <div class="carte ligne" style="padding:12px 16px"><img src="img/logo.jpg" alt="" style="width:44px;height:44px;border-radius:10px">
@@ -160,7 +183,7 @@
         <a class="rond lime" href="tel:${B.telephone.replace(/\s/g, '')}" aria-label="Appeler la boutique au ${esc(B.telephone)}">${ic('tel')}</a></div>
     </div></div>
     <div class="basbar">${rondPanier().replace('class="rond"', 'class="rond" style="width:54px;height:54px;background:var(--bg)"')}
-      ${p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
+      ${p.particulier ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.etatAnnonce !== 'en_ligne' ? ' disabled' : ''}>${p.etatAnnonce !== 'en_ligne' ? 'Déjà réservée' : 'Réserver · acompte ' + ar(acompteDe(p.prix))}</button>` : p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
   };
 
   V.panier = () => {
@@ -172,18 +195,19 @@
     return `<div class="ecran">${tete}
     <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
       <a href="#produit-${p.id}" class="vign sq-att">${img(p)}</a>
-      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}${taille ? (p.tailles ? ' · Taille ' : ' · ') + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
+      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${p.particulier ? 'Particulier · ' : ''}${esc(p.detail)}${taille ? (p.tailles ? ' · Taille ' : ' · ') + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
       <div class="pas"><button data-a="moins" data-id="${esc(cle)}" aria-label="${q === 1 ? 'Retirer' : 'Diminuer la quantité de'} ${esc(p.nom)}">${ic('moins', 16)}</button><span aria-live="polite">${q}</span>
-      <button class="plus" data-a="plus" data-id="${esc(cle)}" aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
+      <button class="plus" data-a="plus" data-id="${esc(cle)}"${p.particulier ? ' disabled style="opacity:.35"' : ''} aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
     <div class="choix" role="radiogroup" aria-label="Mode de retrait">
       <button class="opt" role="radio" aria-checked="${ui.mode === 'boutique'}" data-a="mode" data-id="boutique"><b style="font-size:14px;font-weight:600">Retrait boutique</b><span class="petit">Gratuit · ${esc(B.ville)}</span></button>
-      <button class="opt" role="radio" aria-checked="${ui.mode === 'livraison'}" data-a="mode" data-id="livraison"><b style="font-size:14px;font-weight:600">Livraison Tana</b><span class="petit">${ar(B.fraisLivraison)} · sous 48 h</span></button></div>
+      <button class="opt" role="radio" aria-checked="${ui.mode === 'livraison'}" data-a="mode" data-id="livraison"${t.aPart ? ' disabled style="opacity:.45"' : ''}><b style="font-size:14px;font-weight:600">Livraison Tana</b><span class="petit">${ar(B.fraisLivraison)} · sous 48 h</span></button></div>
+    ${t.aPart ? `<p class="petit ligne" style="margin:-6px 0 0;gap:8px;align-items:flex-start">${ic('info', 16, 'style="flex-shrink:0;margin-top:1px"')}Votre panier contient une pièce de particulier : retrait au magasin uniquement. Le code promo ne s'applique pas à ces pièces.</p>` : ''}
     <form class="col" style="gap:6px" data-form="promo"><label class="lib" for="promo">Code promo</label>
       <div class="ligne" style="gap:8px"><input id="promo" class="saisie" data-in="promo" value="${esc(ui.promoSaisie)}" placeholder="Ex. DAGO5" autocapitalize="characters" style="flex:1">
       <button class="btn" style="width:auto;height:50px;padding:0 16px;border-radius:14px;font-size:14px">Appliquer</button></div>
       <span role="status" class="petit" style="color:${ui.promo ? 'var(--ok)' : ui.promoMsg ? 'var(--err)' : 'var(--muted)'}">${esc(ui.promoMsg)}</span></form>
     ${recap(t)}</div>
-    <div class="basbar transp"><button class="btn" data-a="commander">Commander · <span class="nw">${ar(t.total)}</span></button></div>`;
+    <div class="basbar transp"><button class="btn" data-a="commander">${t.aPart ? 'Réserver · ' : 'Commander · '}<span class="nw">${ar(t.total - t.resteParticuliers)}</span></button></div>`;
   };
 
   const LOGO_FB = '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.02 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.09 24 18.09 24 12.07z"/></svg>';
@@ -226,9 +250,10 @@
       <span id="telcmd-aide" class="petit" style="color:${ui.telErreur ? 'var(--err)' : 'var(--muted)'}">${esc(ui.telErreur || 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.')}</span></div>
     <div class="col" style="gap:8px"><h2 class="h2" style="font-size:15px">Moyen de paiement</h2>
       <div class="choix trois" role="radiogroup" aria-label="Moyen de paiement">${[['mvola', 'MVola'], ['orange', 'Orange Money'], ['especes', 'Espèces']].map(([id, l]) => `<button class="opt" role="radio" aria-checked="${ui.paiement === id}" data-a="payer-par" data-id="${id}">${l}</button>`).join('')}</div>
-      <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start" role="status">${ic('info', 16, 'style="flex-shrink:0;margin-top:1px"')}${notesPaiement[ui.paiement]}</p></div>
+      <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start" role="status">${ic('info', 16, 'style="flex-shrink:0;margin-top:1px"')}${notesPaiement[ui.paiement]}</p>
+      ${t.aPart ? `<p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start">${ic('etiquette', 16, 'style="flex-shrink:0;margin-top:1px"')}Pour les pièces de particuliers, vous ne payez maintenant que l'acompte (${ar(t.acompte)}). Le reste se paie au comptoir, après examen de la pièce.</p>` : ''}</div>
     ${recap(t)}</div>
-    <div class="basbar transp"><button class="btn" data-a="confirmer">Confirmer · <span class="nw">${ar(t.total)}</span></button></div>`;
+    <div class="basbar transp"><button class="btn" data-a="confirmer">Confirmer · <span class="nw">${ar(t.total - t.resteParticuliers)}</span>${t.aPart ? '&nbsp;maintenant' : ''}</button></div>`;
   };
 
   const ETAPES = [['Réservée', 'check'], ['Préparée', 'cle'], ['Prête', 'sac'], ['Récupérée', 'clef']];
@@ -249,7 +274,8 @@
     <div class="carte col" style="gap:9px;font-size:13px">
       <div class="ligne" style="gap:10px">${ic('panier', 18)}<span>${pl(c.lignes.reduce((s, l) => s + l.q, 0), 'article')} · <b class="nw">${ar(c.total)}</b></span></div>
       <div class="ligne" style="gap:10px">${ic(c.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${c.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom} · ${esc(B.delaiRetrait)}`}</span></div>
-      <div class="ligne" style="gap:10px">${ic('carte', 18)}<span>${{ mvola: 'MVola', orange: 'Orange Money', especes: 'Espèces à la boutique' }[c.paiement]}</span></div></div>
+      <div class="ligne" style="gap:10px">${ic('carte', 18)}<span>${{ mvola: 'MVola', orange: 'Orange Money', especes: 'Espèces à la boutique' }[c.paiement]}</span></div>
+      ${c.acompte ? `<div class="ligne" style="gap:10px;align-items:flex-start">${ic('etiquette', 18, 'style="flex-shrink:0"')}<span>Pièce de particulier : acompte de <b class="nw">${ar(c.acompte)}</b>. Elle arrive au magasin sous ${PP.delaiDepot} ; nous vous appelons dès qu'elle est là. Vous l'examinez au comptoir avant de payer le reste.</span></div>` : ''}</div>
     <div class="col" style="gap:10px;margin-top:6px"><a class="btn" href="#suivi-${esc(c.code)}">Suivre ma commande</a><a class="btn clair" href="#accueil">Retour à l'accueil</a></div></div>`;
   };
 
@@ -286,11 +312,104 @@
         <span class="badge" style="${c.statut === 3 ? 'background:var(--soft);color:var(--muted)' : ''}">${ETAPES[c.statut][0]}</span></a>`).join('') : '<span class="petit" style="padding:6px 0">Aucune commande pour le moment.</span>'}</div>
     ${menuCompte()}</div>`;
   };
-  const menuCompte = () => `<nav class="carte menu" style="padding:4px 16px" aria-label="Aide et réglages">
+  const menuCompte = () => `<nav class="carte menu" style="padding:4px 16px" aria-label="Vendre mes pièces">
+    <a href="#vendre"><span class="ico">${ic('etiquette', 18)}</span><span style="flex:1;font-weight:500">Vendre une pièce</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
+    <a href="#annonces"><span class="ico">${ic('grille', 18)}</span><span style="flex:1;font-weight:500">Mes annonces</span>${annonces.filter((x) => x.proprio).length ? `<span class="petit">${annonces.filter((x) => x.proprio).length}</span>` : ''}${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
+    <a href="#conditions"><span class="ico">${ic('bouclier', 18)}</span><span style="flex:1;font-weight:500">Conditions entre particuliers</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
+    <a href="#validation"><span class="ico">${ic('check', 18)}</span><span style="flex:1;font-weight:500">Espace boutique (démo)</span>${annonces.filter((x) => x.etat === 'attente').length ? `<span class="badge">${annonces.filter((x) => x.etat === 'attente').length}</span>` : ''}${ic('fleche', 16, 'style="color:var(--muted)"')}</a></nav>
+  <nav class="carte menu" style="padding:4px 16px" aria-label="Aide et réglages">
     <a href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener"><span class="ico">${ic('bulle', 18)}</span><span style="flex:1;font-weight:500">Aide et contact WhatsApp</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
     <a href="tel:${B.telephone.replace(/\s/g, '')}"><span class="ico">${ic('tel', 18)}</span><span style="flex:1;font-weight:500">Appeler · ${esc(B.telephone)}</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
     <a href="#compte" aria-disabled="true"><span class="ico">${ic('globe', 18)}</span><span style="flex:1;font-weight:500">Langue</span><span class="petit">Français</span></a>
     ${client ? `<a href="#compte" data-a="deconnexion"><span class="ico">${ic('sortie', 18)}</span><span style="flex:1;font-weight:500">Se déconnecter</span></a>` : ''}</nav>`;
+
+  /* ---------- Vente de pièces entre particuliers ---------- */
+  const ETATS_PIECE = ['Neuve', 'Très bon état', 'Bon état', 'Usée mais fonctionnelle'];
+  const STATUTS = {
+    attente: ['En attente de validation', 'La boutique vérifie votre annonce avant de la mettre en ligne.', 'soft'],
+    en_ligne: ['En ligne', 'Visible dans « Occasion entre particuliers ».', 'lime'],
+    reservee: ['Réservée', '', 'warn'],
+    vendue: ['Vendue', '', 'soft'],
+    refusee: ['Refusée', 'La boutique n’a pas accepté cette annonce.', 'err'],
+    retiree: ['Retirée', 'Vous avez retiré cette annonce.', 'soft']
+  };
+  const limiteDepot = (x) => new Date(x.reserveLe + 48 * 3600 * 1000).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  const badgeStatut = (x) => `<span class="badge statut ${STATUTS[x.etat][2]}">${STATUTS[x.etat][0]}</span>`;
+  const champ = (id, lib, html, aide) => `<div class="col" style="gap:6px"><label class="lib" for="${id}">${lib}</label>${html}${aide ? `<span class="petit">${aide}</span>` : ''}</div>`;
+
+  V.vendre = () => {
+    if (!client) { ui.retour = 'vendre'; location.hash = 'connexion'; return ''; }
+    const v = ui.vente, prix = +v.prix || 0;
+    const tel = v.tel || client.tel || '';
+    return `<div class="ecran">${entete('Vendre une pièce', 'compte')}
+    <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:16px">Comment ça marche</h2>
+      <ol class="etapes-vente">
+        <li><b>Vous publiez</b> la photo réelle et le prix de votre pièce. La boutique valide l’annonce.</li>
+        <li><b>Un acheteur réserve</b> : vous avez ${PP.delaiDepot} pour déposer la pièce au magasin ${esc(B.nom)}.</li>
+        <li><b>L’acheteur l’examine</b> au comptoir. S’il la prend, vous êtes payé tout de suite, moins ${Math.round(PP.commission * 100)} % de commission.</li></ol>
+      <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start">${ic('bouclier', 16, 'style="flex-shrink:0;margin-top:1px"')}Pièces uniquement (pas de moto ni de scooter). Votre nom et votre numéro ne sont jamais montrés à l’acheteur.</p></div>
+    <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:16px">Guide photo</h2>
+      <div class="guide">${[['soleil', 'En plein jour', 'Près d’une fenêtre ou dehors, sans flash.'], ['photo', 'Pièce entière', 'Posée sur un fond uni et clair, bien centrée.'], ['loupe', 'Les références', 'Montrez les numéros ou marques gravés.'], ['info', 'Les défauts', 'Rayures, usure : montrez-les, l’acheteur les verra.']]
+        .map(([i, t, d]) => `<div class="conseil">${ic(i, 20)}<b>${t}</b><span class="petit">${d}</span></div>`).join('')}</div></div>
+    <form data-form="vendre" class="col" style="gap:14px" novalidate>
+      ${v.photo ? `<div class="photo-zone pleine"><img src="${v.photo}" alt="Photo de votre pièce"><button type="button" class="rond" data-a="photo-suppr" aria-label="Changer de photo" style="position:absolute;top:10px;right:10px">${ic('modifier', 18)}</button></div>`
+        : `<label class="photo-zone" for="v-photo">${ic('photo', 34)}<b>Prendre ou choisir une photo</b><span class="petit">Photo réelle de votre pièce, pas d’image d’internet</span></label>`}
+      <input id="v-photo" type="file" accept="image/*" data-in="v-photo" class="sr">
+      ${champ('v-titre', 'Nom de la pièce', `<input id="v-titre" class="saisie" data-in="v-titre" value="${esc(v.titre)}" placeholder="Ex. Carburateur, rétroviseur gauche" maxlength="60">`)}
+      ${champ('v-compat', 'Compatible avec', `<input id="v-compat" class="saisie" data-in="v-compat" value="${esc(v.compat)}" placeholder="Ex. Kymco GP 125" maxlength="60">`)}
+      ${champ('v-etat', 'État', `<select id="v-etat" class="saisie" data-in="v-etat">${ETATS_PIECE.map((e) => `<option${v.etatPiece === e ? ' selected' : ''}>${e}</option>`).join('')}</select>`)}
+      ${champ('v-desc', 'Description <span class="petit">(facultatif)</span>', `<textarea id="v-desc" class="saisie" data-in="v-desc" rows="3" maxlength="300" placeholder="Défauts, kilométrage du scooter d’origine…">${esc(v.desc)}</textarea>`)}
+      ${champ('v-prix', 'Prix de vente (Ar)', `<input id="v-prix" class="saisie" data-in="v-prix" inputmode="numeric" value="${esc(v.prix)}" placeholder="Ex. 50000">`)}
+      <div class="carte col net" id="v-net" style="gap:4px">${netHtml(prix)}</div>
+      ${champ('v-tel', 'Votre numéro (pour la boutique seulement)', `<div class="tel" style="border-width:1px;border-color:var(--line)"><span style="padding-left:12px">+261</span><input id="v-tel" type="tel" inputmode="numeric" data-in="v-tel" value="${esc(tel)}" placeholder="34 00 000 00"></div>`, 'La boutique vous appelle quand la pièce est réservée. L’acheteur ne le voit jamais.')}
+      <button type="button" class="accepte" role="checkbox" aria-checked="${v.accepte}" data-a="vente-accepte"><span class="case">${v.accepte ? ic('check', 16, 'stroke-width="2.4"') : ''}</span><span>J’accepte les <a href="#conditions" style="text-decoration:underline">conditions de vente entre particuliers</a> et je déclare être propriétaire de cette pièce.</span></button>
+      <p class="petit" role="alert" style="margin:0;color:var(--err);font-weight:500">${esc(v.erreur)}</p>
+      <button class="btn">Envoyer pour validation</button></form></div>`;
+  };
+  function netHtml(prix) {
+    if (!prix) return '<span class="petit">Indiquez un prix pour voir ce que vous recevrez.</span>';
+    return `<div class="ligne entre"><span style="font-weight:500">Vous recevrez</span><b class="prix" style="font-size:18px">${ar(netVendeur(prix))}</b></div>
+      <span class="petit">Prix affiché ${ar(prix)} − commission ${Math.round(PP.commission * 100)} % (${ar(prix - netVendeur(prix))}), payé au moment de la vente.</span>`;
+  }
+
+  V.annonces = () => {
+    if (!client) { ui.retour = 'annonces'; location.hash = 'connexion'; return ''; }
+    const l = annonces.filter((x) => x.proprio).slice().reverse();
+    return `<div class="ecran">${entete('Mes annonces', 'compte', '<a href="#vendre" class="rond" aria-label="Vendre une pièce">' + ic('plus') + '</a>')}
+    ${l.length ? l.map((x) => `<div class="carte col" style="gap:10px"><div class="ligne" style="gap:12px;align-items:flex-start"><span class="vign">${img(deAnnonce(x))}</span>
+      <div class="col" style="flex:1;gap:2px"><b style="font-size:15px;font-weight:600">${esc(x.titre)}</b><span class="petit">${esc(x.compat)} · ${esc(x.etatPiece)}</span>
+      <span class="petit">Prix ${ar(x.prix)} · vous recevrez <b style="color:var(--ink)">${ar(netVendeur(x.prix))}</b></span><span style="margin-top:4px">${badgeStatut(x)}</span></div></div>
+      <p class="petit" style="margin:0;font-size:13px">${x.etat === 'reservee' ? `Un acheteur a réservé cette pièce. Déposez-la au magasin avant <b style="color:var(--ink)">${limiteDepot(x)}</b>, sinon la réservation est annulée.` : x.etat === 'vendue' ? `Vendue : ${ar(netVendeur(x.prix))} versés par la boutique.` : STATUTS[x.etat][1]}</p>
+      ${x.etat === 'attente' || x.etat === 'en_ligne' ? `<button class="btn clair" style="height:44px" data-a="retirer-annonce" data-id="${x.id}">Retirer l’annonce</button>` : ''}</div>`).join('')
+      : `<div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('etiquette', 28)}</span><b style="font-size:17px">Aucune annonce</b><span class="petit" style="font-size:13px">Vendez vos pièces en trop : la boutique s’occupe de l’acheteur.</span><a href="#vendre" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Vendre une pièce</a></div>`}</div>`;
+  };
+
+  V.validation = () => {
+    const att = annonces.filter((x) => x.etat === 'attente'), res = annonces.filter((x) => x.etat === 'reservee');
+    const fiche = (x, boutons) => `<div class="carte col" style="gap:10px">
+      <div class="ligne" style="gap:12px;align-items:flex-start"><span class="vign" style="width:88px;height:88px">${img(deAnnonce(x))}</span>
+      <div class="col" style="flex:1;gap:2px"><b style="font-size:15px;font-weight:600">${esc(x.titre)}</b><span class="petit">${esc(x.compat)} · ${esc(x.etatPiece)}</span><span class="prix" style="font-size:15px">${ar(x.prix)}</span>
+      <span class="petit">Vendeur : ${esc(x.vendeur.nom)} · +261 ${esc(x.vendeur.tel)}</span></div></div>
+      ${x.description ? `<p class="petit" style="margin:0;font-size:13px">${esc(x.description)}</p>` : ''}${boutons}</div>`;
+    return `<div class="ecran">${entete('Espace boutique', 'compte')}
+    <p class="demo" style="margin:0">Démonstration : dans la vraie app, cet écran sera réservé à votre compte boutique. Le numéro du vendeur n’apparaît qu’ici.</p>
+    <h2 class="h2">Annonces à valider <span class="petit">(${att.length})</span></h2>
+    ${att.length ? att.map((x) => fiche(x, `<div class="choix"><button class="btn clair" style="height:46px" data-a="refuser" data-id="${x.id}">Refuser</button><button class="btn" style="height:46px" data-a="valider" data-id="${x.id}">Mettre en ligne</button></div>`)).join('') : '<p class="petit" style="margin:0">Aucune annonce en attente.</p>'}
+    <h2 class="h2" style="margin-top:6px">Pièces réservées <span class="petit">(${res.length})</span></h2>
+    ${res.length ? res.map((x) => fiche(x, `<p class="petit" style="margin:0">Commande ${esc(x.commande || '')} · dépôt attendu avant ${limiteDepot(x)}.</p>
+      <div class="choix"><button class="btn clair" style="height:46px" data-a="remettre-en-vente" data-id="${x.id}">Refusée ou absente</button><button class="btn" style="height:46px" data-a="vendue" data-id="${x.id}">Vendue</button></div>`)).join('') : '<p class="petit" style="margin:0">Aucune pièce réservée.</p>'}</div>`;
+  };
+
+  V.conditions = () => `<div class="ecran">${entete('Conditions', 'compte')}
+    <div class="carte col texte-legal"><h1 class="h2" style="font-size:18px">Vente de pièces entre particuliers</h1>
+      <p class="demo" style="margin:0">Projet de texte, à faire relire par un professionnel du droit avant la mise en service.</p>
+      <h2>1. Rôle de ${esc(B.nom)}</h2><p>${esc(B.nom)} met en relation, par l’intermédiaire de son magasin, des particuliers qui vendent des pièces détachées et des acheteurs. La boutique n’est ni le vendeur ni le propriétaire des pièces. Elle ne les contrôle pas, ne les teste pas et n’apporte aucune garantie sur leur état, leur fonctionnement ou leur compatibilité.</p>
+      <h2>2. Pièces acceptées</h2><p>Seules les pièces détachées sont acceptées, jamais les motos ni les scooters. La boutique peut refuser toute annonce sans avoir à se justifier, notamment les pièces d’origine douteuse ou les pièces de sécurité usées.</p>
+      <h2>3. Pour le vendeur</h2><p>Le vendeur déclare être propriétaire de la pièce et publie une photo réelle. Il fixe librement son prix. Quand la pièce est réservée, il doit la déposer au magasin sous ${PP.delaiDepot}, sinon la réservation est annulée. Une carte d’identité lui est demandée au comptoir lors de son premier dépôt. Il est payé dès que l’acheteur prend la pièce, déduction faite d’une commission de ${Math.round(PP.commission * 100)} % du prix de vente.</p>
+      <h2>4. Pour l’acheteur</h2><p>L’acheteur verse un acompte de ${Math.round(PP.acompte * 100)} % à la réservation. Il examine la pièce au comptoir et paie le reste s’il la garde. La pièce est vendue en l’état, sans garantie ni reprise après le retrait. S’il la refuse au comptoir, son acompte lui est remboursé. S’il ne vient pas dans les ${PP.retrait} suivant l’arrivée de la pièce au magasin, l’acompte est conservé et partagé entre la boutique et le vendeur.</p>
+      <h2>5. Pas de contact direct</h2><p>Acheteur et vendeur ne sont jamais mis en relation : la boutique ne communique ni nom ni numéro de l’un à l’autre. Toute la vente se fait par l’application et au magasin.</p>
+      <h2>6. Pièce non vendue</h2><p>Si l’acheteur refuse la pièce ou ne vient pas, le vendeur dispose de ${PP.reprise} pour la reprendre au magasin ou demander sa remise en vente.</p>
+      <h2>7. Retrait</h2><p>Toutes les pièces vendues entre particuliers se récupèrent au magasin ${esc(B.nom)}, ${esc(B.ville)}. Aucune livraison.</p></div></div>`;
 
   V.introuvable = () => `<div class="ecran">${entete('Introuvable', 'accueil')}<div class="carte col vide"><b>Cette page n'existe pas ou plus.</b><a class="btn" href="#accueil" style="margin-top:8px">Retour à l'accueil</a></div></div>`;
 
@@ -334,7 +453,7 @@
   let derniere = '';
   function route() {
     const h = decodeURIComponent(location.hash.slice(1)) || 'accueil';
-    const m = h.match(/^(accueil|catalogue|produit|panier|connexion|paiement|confirmation|suivi|compte)(?:-(.+))?$/);
+    const m = h.match(/^(accueil|catalogue|produit|panier|connexion|paiement|confirmation|suivi|compte|vendre|annonces|validation|conditions)(?:-(.+))?$/);
     const nom = m ? m[1] : 'introuvable';
     const html = (V[nom] || V.introuvable)(m && m[2]);
     if (!html) return; // redirection en cours
@@ -354,6 +473,7 @@
   const actions = {
     ajouter(id) {
       const p = produit(id); if (!p || !p.prix) return;
+      if (p.particulier && (p.etatAnnonce !== 'en_ligne' || panier[id])) { toast(panier[id] ? 'Cette pièce unique est déjà dans votre panier' : 'Pièce déjà réservée'); return; }
       if (choixDe(p) && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
       const cle = choixDe(p) ? id + '@' + ui.taille : id;
       panier[cle] = (panier[cle] || 0) + 1; sauver(); rafraichir();
@@ -366,7 +486,7 @@
     filtre(v) { const [cle, val] = v.split(':'); const actuel = String(ui.f[cle]); ui.f[cle] = actuel === val ? null : (val === 'true' ? true : val); majFiltres(); },
     'filtres-raz'() { ui.f = { prix: null, cyl: null, promo: null, stock: null }; majFiltres(); if (feuilleType !== 'filtres') rafraichir(); },
     suggestion(t) { ui.recherche = t; memoRecherche(t); rafraichir(); },
-    plus(id) { panier[id] = (panier[id] || 0) + 1; sauver(); rafraichir(); },
+    plus(id) { const p = produit(decoupe(id).id); if (p && p.particulier) { toast('Pièce unique'); return; } panier[id] = (panier[id] || 0) + 1; sauver(); rafraichir(); },
     moins(id) { panier[id] = (panier[id] || 0) - 1; if (panier[id] <= 0) delete panier[id]; sauver(); rafraichir(); },
     vider() { panier = {}; sauver(); rafraichir(); },
     cat(id) { ui.cat = id; ui.recherche = ''; ui.f = { prix: null, cyl: null, promo: null, stock: null }; aller('catalogue-' + id); },
@@ -401,10 +521,18 @@
       const t = totaux();
       const num = String(128 + commandes.length).padStart(4, '0');
       const c = { code: 'DMS-' + num, date: new Date().toLocaleDateString('fr-FR'), lignes: t.lignes.map(({ p, q, taille }) => ({ id: p.id, taille, q, prix: p.prix })),
-        total: t.total, mode: ui.mode, paiement: ui.paiement, statut: 0, tel: client.tel };
+        total: t.total, mode: ui.mode, paiement: ui.paiement, statut: 0, tel: client.tel, acompte: t.acompte };
+      t.lignes.filter((l) => l.p.particulier).forEach((l) => { const x = annonces.find((y) => y.id === l.p.id); if (x) { x.etat = 'reservee'; x.reserveLe = Date.now(); x.commande = c.code; } });
       commandes.push(c); panier = {}; ui.promo = null; ui.promoSaisie = ''; ui.promoMsg = ''; sauver();
       aller('confirmation-' + c.code);
     },
+    valider(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'en_ligne'; sauver(); toast('Annonce mise en ligne'); rafraichir(); } },
+    refuser(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'refusee'; sauver(); toast('Annonce refusée'); rafraichir(); } },
+    vendue(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'vendue'; sauver(); toast('Vente enregistrée : payez le vendeur ' + ar(netVendeur(x.prix))); rafraichir(); } },
+    'remettre-en-vente'(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'en_ligne'; delete x.commande; sauver(); toast('Pièce remise en vente'); rafraichir(); } },
+    'retirer-annonce'(id) { const x = annonces.find((y) => y.id === id); if (x && (x.etat === 'attente' || x.etat === 'en_ligne')) { x.etat = 'retiree'; sauver(); toast('Annonce retirée'); rafraichir(); } },
+    'vente-accepte'() { ui.vente.accepte = !ui.vente.accepte; ui.vente.erreur = ''; rafraichir(); },
+    'photo-suppr'() { ui.vente.photo = ''; rafraichir(); },
     'demo-statut'(code) { const c = trouverCmd(code); if (c && c.statut < 3) { c.statut++; sauver(); rafraichir(); } }
   };
 
@@ -424,6 +552,11 @@
     if (k === 'promo') ui.promoSaisie = e.target.value;
     if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
     if (k === 'email') ui.email = e.target.value;
+    if (k && k.startsWith('v-') && k !== 'v-photo') {
+      const champ = { 'v-titre': 'titre', 'v-compat': 'compat', 'v-etat': 'etatPiece', 'v-desc': 'desc', 'v-prix': 'prix', 'v-tel': 'tel' }[k];
+      if (k === 'v-prix') { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 9); const n = document.getElementById('v-net'); if (n) n.innerHTML = netHtml(+e.target.value || 0); }
+      ui.vente[champ] = e.target.value; ui.vente.erreur = '';
+    }
     if (k === 'code') {
       e.target.value = e.target.value.replace(/\D/g, '').slice(-1);
       const cases = [...document.querySelectorAll('[data-in=code]')];
@@ -443,9 +576,31 @@
     document.querySelectorAll('[data-in=code]').forEach((c, i) => { c.value = v[i] || ''; });
   });
 
+  /* Photo de l'annonce : réduite à 900 px de large pour rester légère sur une connexion lente. */
+  document.addEventListener('change', (e) => {
+    if (!(e.target.dataset && e.target.dataset.in === 'v-photo') || !e.target.files || !e.target.files[0]) return;
+    const f = e.target.files[0]; if (!/^image\//.test(f.type)) { ui.vente.erreur = 'Choisissez une image.'; rafraichir(); return; }
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => { const k = Math.min(1, 900 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ui.vente.photo = c.toDataURL('image/jpeg', 0.72); ui.vente.erreur = ''; rafraichir(); };
+    im.onerror = () => { ui.vente.erreur = 'Impossible de lire cette photo. Essayez-en une autre.'; rafraichir(); };
+    im.src = url;
+  });
+
   document.addEventListener('submit', (e) => {
     const f = e.target.dataset.form; if (!f) return;
     e.preventDefault();
+    if (f === 'vendre') {
+      const v = ui.vente, chiffres = (v.tel || client.tel || '').replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
+      const err = !v.photo ? 'Ajoutez une photo réelle de votre pièce.' : v.titre.trim().length < 3 ? 'Indiquez le nom de la pièce.' : !v.compat.trim() ? 'Indiquez avec quels modèles la pièce est compatible.'
+        : !(+v.prix >= 1000) ? 'Indiquez un prix d’au moins 1 000 Ar.' : !/^3[2-47-8]\d{7}$/.test(chiffres) ? 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.' : !v.accepte ? 'Acceptez les conditions pour envoyer l’annonce.' : '';
+      if (err) { v.erreur = err; rafraichir(); const a = document.querySelector('[role=alert]'); if (a) a.scrollIntoView({ block: 'center' }); return; }
+      const tel = chiffres.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); client.tel = client.tel || tel;
+      annonces.push({ id: 'occ-' + Date.now().toString(36), etat: 'attente', titre: v.titre.trim(), compat: v.compat.trim(), etatPiece: v.etatPiece, prix: +v.prix, description: v.desc.trim(), photo: v.photo,
+        vendeur: { nom: client.nom || 'Vendeur', tel }, proprio: true, creeLe: Date.now() });
+      ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photo: '', accepte: false, erreur: '' };
+      sauver(); toast('Annonce envoyée à la boutique'); aller('annonces'); return;
+    }
     if (f === 'recherche') { ui.recherche = e.target.q.value; memoRecherche(ui.recherche); aller('catalogue'); }
     if (f === 'promo') {
       const code = ui.promoSaisie.trim().toUpperCase();
