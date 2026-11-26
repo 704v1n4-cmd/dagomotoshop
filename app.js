@@ -89,7 +89,29 @@
   const produit = (id) => { const p = D.produits.find((x) => x.id === id); if (p) return p; const x = annonces.find((y) => y.id === id); return x ? deAnnonce(x) : undefined; };
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
   const ICO = window.DMS_ICONES_PIECES || {};
-  const icoSrc = (n) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect x='1' y='1' width='94' height='94' rx='23' fill='#FFFFFF' stroke='#E4E4E7' stroke-width='2'/><circle cx='64' cy='34' r='12' fill='#5BE52B'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#18181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
+  /* Icône automatique : on cherche dans le jeu d'icônes la pièce dont le nom ressemble le plus ;
+     sinon on crée une icône avec les initiales de l'article, dans le même style. */
+  const sansAccent = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const mots = (s) => sansAccent(s).replace(/[^a-z0-9]+/g, ' ').split(' ').filter((w) => w.length > 2 && !['les', 'des', 'pour', 'avec', 'avant', 'arriere', 'moto', 'scooter', 'complet', 'kit'].includes(w)).map((w) => w.replace(/(es|s|x)$/, ''));
+  const SYNONYMES = { plaquet: 'Plaquettes de frein', frein: 'Plaquettes de frein', machoir: 'Mâchoires / garnitures', garniture: 'Mâchoires / garnitures', chain: 'Kit chaîne (chaîne, pignon, couronne)', pignon: 'Kit chaîne (chaîne, pignon, couronne)', couronne: 'Kit chaîne (chaîne, pignon, couronne)',
+    galet: 'Galets de variateur', ampoule: 'Ampoules / LED', led: 'Ampoules / LED', feu: 'Feu arrière', clignotant: 'Clignotants', retro: 'Rétroviseurs', retroviseur: 'Rétroviseurs', carbu: 'Carburateur', amorti: 'Amortisseur arrière', amortisseur: 'Amortisseur arrière',
+    pot: 'Pot d’échappement', echappement: 'Pot d’échappement', poignee: 'Poignées', bequille: 'Béquille centrale', carenage: 'Carénage latéral', cdi: 'CDI / boîtier électronique', neiman: 'Neiman / contacteur à clé', contacteur: 'Neiman / contacteur à clé', cle: 'Outillage', outil: 'Outillage',
+    joint: 'Pochette de joints', durite: 'Durite de frein', cable: 'Câble de frein', filtre: 'Filtre à air', huile: 'Huile', lubrifiant: 'Huile', graisse: 'Huile', casque: 'Casque', gant: 'Gants', spi: 'Pochette de joints', jante: 'Jante avant', roue: 'Roue complète', roulement: 'Roulements de roue', chambre: 'Chambre à air', piston: 'Cylindre / piston', cylindre: 'Cylindre / piston', compteur: 'Compteur', lampe: 'Ampoules / LED' };
+  const iconeAuto = (nom) => {
+    const m = mots(nom); if (!m.length) return '';
+    /* Le premier mot (le nom de la pièce) passe avant le reste : « Filtre à huile » → filtre. */
+    const tete = m[0], km0 = Object.keys(ICO).filter((k) => k !== 'Autres' && mots(k)[0] === tete);
+    if (km0.length) return km0.sort((x, y) => mots(y).filter((w) => m.includes(w)).length - mots(x).filter((w) => m.includes(w)).length || x.length - y.length)[0];
+    if (SYNONYMES[tete] && ICO[SYNONYMES[tete]]) return SYNONYMES[tete];
+    let best = '', score = 0;
+    Object.keys(ICO).filter((k) => k !== 'Autres').forEach((k) => { const km = mots(k); const s = m.filter((w) => km.some((x) => x === w || (w.length > 4 && (x.startsWith(w) || w.startsWith(x))))).length / Math.max(1, km.length) + m.filter((w) => km.includes(w)).length; if (s > score) { score = s; best = k; } });
+    if (score >= 1) return best;
+    const syn = m.map((w) => SYNONYMES[w] || Object.entries(SYNONYMES).find(([k]) => w.startsWith(k))?.[1]).find(Boolean);
+    if (syn && ICO[syn]) return syn;
+    const lettres = sansAccent(nom).replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    return 'auto:' + ((lettres[0] || '?')[0] + (lettres[1] ? lettres[1][0] : (lettres[0] || '?')[1] || '')).toUpperCase();
+  };
+  const icoSrc = (n) => /^auto:/.test(n || '') ? 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect x='1' y='1' width='94' height='94' rx='23' fill='#FFFFFF' stroke='#E4E4E7' stroke-width='2'/><circle cx='64' cy='34' r='12' fill='#5BE52B'/><text x='44' y='68' text-anchor='middle' font-family='Manrope,Arial,Helvetica,sans-serif' font-size='28' font-weight='800' fill='#18181B' letter-spacing='1'>${esc(n.slice(5, 8))}</text></svg>`) : 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect x='1' y='1' width='94' height='94' rx='23' fill='#FFFFFF' stroke='#E4E4E7' stroke-width='2'/><circle cx='64' cy='34' r='12' fill='#5BE52B'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#18181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
   const img = (p, cls) => p.icone && !p.photoReelle ? `<img src="${icoSrc(p.icone)}" alt="${esc(p.nom)}" class="sq icone-piece ${cls || ''}">` : (() => { const grand = /hero-img/.test(cls || ''); const src = !grand && /^img\/[^/]+\.webp/.test(p.img || '') ? p.img.replace(/^img\//, 'img/mini/') : p.img;
     return `<img src="${src}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" ${grand ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`; })();
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
@@ -277,7 +299,7 @@
     </div></div>
     <div class="basbar">${rondPanier().replace('class="rond"', 'class="rond" style="width:54px;height:54px;background:var(--bg)"')}
       ${p.particulier ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.etatAnnonce !== 'en_ligne' ? ' disabled' : ''}>${p.etatAnnonce !== 'en_ligne' ? 'Déjà réservée' : 'Réserver · acompte ' + ar(acompteDe(p.prix))}</button>` : enRupture(p) ? ((alertes[p.id] || []).some((a) => client && a.client === client.nom + '|' + (client.email || client.methode)) ? `<button class="btn clair" disabled>${ic('check', 20)}Vous serez prévenu</button>` : `<button class="btn" data-a="prevenir" data-id="${p.id}">${ic('cloche', 20)}Me prévenir quand il revient</button>`)
-        : p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}">${p.genre || p.cat === 'scooters' ? 'Réserver' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
+        : p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}">${p.genre || p.cat === 'scooters' ? 'Réserver' : 'Ajouter au panier'}</button>` : `<a class="btn lime" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
   };
 
   V.panier = () => {
@@ -604,7 +626,7 @@
   const ancienStocke = (id) => { const m = catalogue.modifs[id]; if (m && 'ancienPrix' in m) return m.ancienPrix; const o = BASE.concat(catalogue.ajouts).find((x) => x.id === id); return o ? o.ancienPrix : null; };
   const brouillon = (p) => ({ id: p ? p.id : '', nom: p ? p.nom : '', detail: p ? p.detail : '', cat: p ? p.cat : 'pieces', genre: p ? (p.genre || 'scooter') : 'scooter', etat: p ? p.etat : 'Neuf',
     prix: p && p.prix ? String(p.prix) : '', stock: p && p.stock != null ? String(p.stock) : '', compat: p ? (p.compat || '') : '', modeles: p ? modelesDe(p).slice() : [], famille: p ? (p.famille || '') : '', description: p ? (p.description || '') : '',
-    photos: p ? (p.photos && p.photos.length ? p.photos.slice() : p.img ? [p.img] : []) : [], icone: p ? (p.icone || '') : '', offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
+    photos: p ? (p.photos && p.photos.length ? p.photos.slice() : p.img ? [p.img] : []) : [], icone: p ? (p.icone || '') : '', iconeMode: p ? (p.icone ? 'manuel' : 'aucune') : 'auto', offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
   V.article = (id) => {
     if (!admin) { location.hash = 'admin'; return ''; }
     const nouveau = id === 'nouveau', p = nouveau ? null : D.produits.find((x) => x.id === id);
@@ -628,7 +650,8 @@
       ${veh ? `<div class="col" style="gap:6px"><span class="lib">Type</span>${seg('genre', [['scooter', 'Scooter'], ['moto', 'Moto']])}</div>` : ''}
       <div class="col" style="gap:6px"><span class="lib">État</span>${seg('etat', [['Occasion', 'Occasion'], ['Neuf', 'Neuf']])}</div>
       ${veh ? '' : `<div class="col" style="gap:6px"><label class="lib" for="a-icone">Icône de la pièce <span class="petit">(à la place d’une photo)</span></label>
-        <div class="ligne" style="gap:10px">${a.icone ? `<img src="${icoSrc(a.icone)}" alt="" width="48" height="48" style="border-radius:12px;flex-shrink:0">` : ''}<select id="a-icone" class="saisie" data-in="a-icone"${ro}><option value="">Aucune : utiliser les photos</option>${Object.entries(D.piecesListe).map(([f, l]) => `<optgroup label="${esc(f)}">${l.map((n) => `<option${a.icone === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}<option${a.icone === 'Autres' ? ' selected' : ''}>Autres</option></select></div></div>`}
+        <div class="ligne" style="gap:10px">${icoArt(a) ? `<img id="a-icone-apercu" src="${icoSrc(icoArt(a))}" alt="" width="48" height="48" style="border-radius:12px;flex-shrink:0">` : ''}<select id="a-icone" class="saisie" data-in="a-icone"${ro}><option value="__auto"${a.iconeMode === 'auto' ? ' selected' : ''}>Automatique (selon le nom)</option><option value=""${a.iconeMode === 'aucune' ? ' selected' : ''}>Aucune : utiliser les photos</option>${Object.entries(D.piecesListe).map(([f, l]) => `<optgroup label="${esc(f)}">${l.map((n) => `<option${a.iconeMode === 'manuel' && a.icone === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}<option${a.iconeMode === 'manuel' && a.icone === 'Autres' ? ' selected' : ''}>Autres</option></select></div>
+        <span class="petit" id="a-icone-aide">${aideIcone(a)}</span></div>`}
       ${veh ? '' : `<div class="col" style="gap:6px"><span class="lib">Modèles compatibles <span class="petit">(${a.modeles.includes('universel') ? 'tous' : a.modeles.length || 'aucun : « à confirmer au magasin »'})</span></span>
         <button type="button" class="puce" style="height:38px;align-self:flex-start" aria-pressed="${a.modeles.includes('universel')}" data-a="art-modele" data-id="universel"${ro}>Toutes motos et scooters</button>
         ${a.modeles.includes('universel') ? '' : MARQUES.map((mq) => `<div class="col" style="gap:4px"><span class="petit" style="font-weight:600">${esc(mq)}</span><div class="ligne" style="gap:6px;flex-wrap:wrap">${MODELES.filter((m) => m.marque === mq).map((m) => `<button type="button" class="puce" style="height:36px" aria-pressed="${a.modeles.includes(m.id)}" data-a="art-modele" data-id="${m.id}"${ro}>${esc(m.nom.slice(mq.length + 1))}</button>`).join('')}</div></div>`).join('')}</div>`}
@@ -654,10 +677,12 @@
     <p class="petit" role="alert" style="margin:0;color:var(--err);font-weight:500">${esc(a.erreur)}</p>
     <button class="btn">${nouveau ? 'Ajouter l’article' : 'Enregistrer'}</button></form></div>`;
   };
+  const icoArt = (a) => a.iconeMode === 'auto' ? iconeAuto(a.nom) : a.iconeMode === 'manuel' ? a.icone : '';
+  const aideIcone = (a) => { const i = icoArt(a); return a.iconeMode !== 'auto' ? '' : !i ? 'Tapez le nom de l’article : l’icône se choisit toute seule.' : /^auto:/.test(i) ? 'Aucune icône ne correspond : une icône a été créée avec les initiales.' : 'Icône trouvée : ' + i + '.'; };
   const enregistrerArticle = () => {
     const a = ui.art, nouveau = ui.artId === 'nouveau', P = estPatron();
     const prix = +a.prix || 0, stock = a.stock === '' ? null : Math.max(0, parseInt(a.stock, 10) || 0), ancien = +a.ancienPrix || 0;
-    const err = P && a.nom.trim().length < 2 ? 'Indiquez le nom de l’article.' : P && !a.photos.filter(Boolean).length && !(a.icone && a.cat !== 'scooters') ? 'Ajoutez au moins une photo ou choisissez une icône.'
+    const err = P && a.nom.trim().length < 2 ? 'Indiquez le nom de l’article.' : P && !a.photos.filter(Boolean).length && !(icoArt(a) && a.cat !== 'scooters') ? 'Ajoutez au moins une photo ou choisissez une icône.'
       : P && a.cat !== 'scooters' && !prix ? 'Indiquez le prix.' : P && prix && prix < 100 ? 'Prix trop bas : vérifiez le montant.'
       : P && a.offre && nbOffres(ui.artId) >= MAX_OFFRES ? `Déjà ${MAX_OFFRES} offres du moment : retirez-en une d’abord.`
       : P && a.offre && ancien && ancien <= prix ? 'L’ancien prix doit être plus élevé que le prix actuel.' : '';
@@ -666,8 +691,8 @@
     if (avant && avant.stock != null && avant.stock <= 0 && stock > 0 && (alertes[ui.artId] || []).length) toast('Pensez à prévenir les clients qui attendent');
     if (!P) { majProduit(ui.artId, { stock }); sauver(); ui.artId = ''; toast('Stock enregistré'); aller('admin'); return; }
     const photos = a.photos.filter(Boolean);
-    const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(), modeles: a.cat === 'scooters' ? [] : a.modeles.slice(), famille: a.cat === 'scooters' ? '' : (a.famille || (Object.entries(D.piecesListe).find(([, l]) => l.includes(a.icone)) || [''])[0]),
-      description: a.description.trim() || a.nom.trim(), img: photos[0] || '', icone: a.cat !== 'scooters' ? a.icone : '', photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
+    const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(), modeles: a.cat === 'scooters' ? [] : a.modeles.slice(), famille: a.cat === 'scooters' ? '' : (a.famille || (Object.entries(D.piecesListe).find(([, l]) => l.includes(icoArt(a))) || ['Autres'])[0]),
+      description: a.description.trim() || a.nom.trim(), img: photos[0] || '', icone: a.cat !== 'scooters' ? icoArt(a) : '', photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
     if (a.cat === 'scooters') champs.genre = a.genre; else champs.genre = undefined;
     if (nouveau) { catalogue.ajouts.push(Object.assign({ id: 'art-' + Date.now().toString(36) }, champs)); appliquerCatalogue(); }
     else majProduit(ui.artId, champs);
@@ -869,7 +894,10 @@
     if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
     if (k === 'email') ui.email = e.target.value;
     if (k === 'adm-q') { ui.admQ = e.target.value; const l = document.getElementById('adm-liste'); if (l) l.innerHTML = listeAdm(); }
-    if (k === 'a-icone' && ui.art) { ui.art.icone = e.target.value; ui.art.erreur = ''; rafraichir(); return; }
+    if (k === 'a-icone' && ui.art) { const v = e.target.value; ui.art.iconeMode = v === '__auto' ? 'auto' : v ? 'manuel' : 'aucune'; if (v && v !== '__auto') ui.art.icone = v; ui.art.erreur = ''; rafraichir(); return; }
+    if (k === 'a-nom' && ui.art && ui.art.iconeMode === 'auto') { ui.art.nom = e.target.value; const i = icoArt(ui.art), im = document.getElementById('a-icone-apercu'), h = document.getElementById('a-icone-aide');
+      if (im && i) im.src = icoSrc(i); else if (!im && i) { const s = document.getElementById('a-icone'); if (s) s.insertAdjacentHTML('beforebegin', `<img id="a-icone-apercu" src="${icoSrc(i)}" alt="" width="48" height="48" style="border-radius:12px;flex-shrink:0">`); }
+      if (h) h.textContent = aideIcone(ui.art); }
     if (k && k.startsWith('a-') && k !== 'a-photo' && ui.art) {
       const champ = { 'a-nom': 'nom', 'a-detail': 'detail', 'a-compat': 'compat', 'a-desc': 'description', 'a-prix': 'prix', 'a-stock': 'stock', 'a-ancien': 'ancienPrix', 'a-fin': 'finOffre' }[k];
       if (k === 'a-prix' || k === 'a-stock' || k === 'a-ancien') e.target.value = e.target.value.replace(/\D/g, '').slice(0, k === 'a-stock' ? 4 : 10);
