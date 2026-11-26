@@ -293,3 +293,29 @@ textarea{font:inherit;color:inherit}
   .banniere .sous{color:#1F2A1A}
 }
 @media (prefers-color-scheme:dark){.badge.part{background:#1B2E14;color:#7CF052}}
+/* Stock et état sous chaque produit, rupture grisée */
+.ligne-stock{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.prod .ligne-stock .stock{margin-top:0}
+.etat-txt{font-size:12px}
+.prod-rupture img.sq,.hero-img.gris,.galerie.gris img{filter:grayscale(1);opacity:.55}
+.prod-rupture .prix,.prod-rupture b{color:var(--muted)}
+.fin-offre{font-size:11px;margin-top:2px}
+/* Espace admin */
+.tuiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tuile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:68px}
+.tuile b{font-size:22px;font-weight:700;line-height:1.1}
+.tuile.on{border-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
+.adm-ligne{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.adm-ligne:first-child{border-top:none}
+.adm-ligne .pas{flex-shrink:0}
+.coupe{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.adm-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.adm-photos .emplacement{min-height:96px}
+.adm-photos .emplacement.plein img{height:96px}
+.adm-photos .emplacement:first-child{grid-column:span 2;grid-row:span 2;min-height:200px}
+.adm-photos .emplacement.plein:first-child img{height:100%;min-height:200px}
+.seg button:disabled{opacity:.55}
+.saisie:disabled{opacity:.6;background:var(--soft)}
+.stock,.badge{white-space:nowrap}
+.pas>span{min-width:30px;text-align:center;font-weight:600}
+.adm-ligne .col .ligne{flex-wrap:wrap;row-gap:4px}

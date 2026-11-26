@@ -23,10 +23,37 @@
   D.annoncesDemo.forEach((x) => { const y = annonces.find((z) => z.id === x.id); if (!y) annonces.push(Object.assign({}, x)); else { if (!y.vendeurId) y.vendeurId = x.vendeurId; if (!y.groupe) { y.groupe = x.groupe; y.piece = x.piece; } } });
   /* Vendeurs : pseudonyme, ventes et notes laissées par les acheteurs (jamais de nom ni de numéro affiché). */
   let vendeurs = Object.assign(JSON.parse(JSON.stringify(D.vendeursDemo)), store.get('vendeurs', {}));
+  /* Catalogue géré par la boutique : prix, stock, état, offres et articles ajoutés depuis l'espace admin.
+     En démo : enregistré sur ce téléphone ; avec Firebase : base partagée entre le patron et les vendeurs. */
+  let catalogue = store.get('catalogue', null) || { modifs: {}, ajouts: [] };
+  let alertes = store.get('alertes', {});      // id produit -> clients à prévenir quand il revient en stock
+  let admin = store.get('admin', null);        // { role: 'patron' | 'vendeur' }
+  const BASE = JSON.parse(JSON.stringify(D.produits));
+  const MAX_OFFRES = 6;
+  const aujourdhui = () => new Date().toISOString().slice(0, 10);
+  const offreActive = (p) => !!p.offre && !!p.prix && p.ancienPrix > p.prix && (!p.finOffre || p.finOffre >= aujourdhui());
+  function appliquerCatalogue() {
+    D.produits = BASE.map((p) => Object.assign({}, p, catalogue.modifs[p.id] || {})).concat(catalogue.ajouts.map((p) => Object.assign({}, p)));
+    D.produits.forEach((p) => {
+      if (!p.etat) p.etat = p.occasion ? 'Occasion' : 'Neuf';
+      if (p.offre === undefined) p.offre = !!p.vedette || !!p.ancienPrix;
+      p.vedette = offreActive(p) || (p.offre && !p.prix); // un véhicule sans prix peut rester à la une
+      if (p.badge && /^-/.test(p.badge)) delete p.badge;
+      if (offreActive(p)) p.badge = '-' + Math.round(100 * (1 - p.prix / p.ancienPrix)) + ' %';
+      else p.ancienPrix = null;
+    });
+  }
+  appliquerCatalogue();
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
     paiement: 'mvola', notes: {}, groupe: '', genre: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
-  const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); };
+  const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); store.set('catalogue', catalogue); store.set('alertes', alertes); store.set('admin', admin); };
+  /* Modifie un article (produit de base : on garde seulement les champs changés ; article ajouté : on le met à jour). */
+  const majProduit = (id, champs) => {
+    const a = catalogue.ajouts.find((x) => x.id === id);
+    if (a) Object.assign(a, champs); else catalogue.modifs[id] = Object.assign(catalogue.modifs[id] || {}, champs);
+    appliquerCatalogue();
+  };
 
   /* ---------- Outils ---------- */
   const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
@@ -58,7 +85,11 @@
   const prixTxt = (p) => p.prix ? ar(p.prix) : 'Prix sur demande';
   const prixCourt = (p) => p.prix ? ar(p.prix) : 'Sur demande';
   const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + (ui.taille && p.versions ? ' ' + ui.taille : '') + ' (' + p.detail + ') ?')}`;
-  const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
+  const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Rupture de stock' : p.stock <= 2 ? `Plus que ${p.stock}` : `${p.stock} en stock`;
+  const stockCls = (p) => p.stock <= 0 ? ' rupture' : p.stock <= 2 ? '' : ' ok';
+  const enRupture = (p) => !p.particulier && p.stock != null && p.stock <= 0;
+  /* Sous chaque produit : état (Neuf / Occasion) et stock exact. */
+  const ligneStock = (p) => p.particulier ? '' : `<span class="ligne-stock">${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : ''}<span class="petit etat-txt">${esc(p.etat || '')}</span></span>`;
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
   const rondPanier = () => `<a href="#panier" class="rond" aria-label="Panier, ${pl(nbPanier(), 'article')}">${ic('panier')}${nbPanier() ? `<span class="pastille">${nbPanier()}</span>` : ''}</a>`;
@@ -90,7 +121,7 @@
   const V = {};
 
   V.accueil = () => {
-    const vedettes = D.produits.filter((p) => p.vedette);
+    const vedettes = D.produits.filter((p) => p.vedette && !enRupture(p)).slice(0, MAX_OFFRES);
     return `<div class="ecran">
     <div class="ligne"><img src="img/logo.jpg" alt="Dagomotoshop" style="width:46px;height:46px;border-radius:10px">
       <div class="col" style="flex:1"><span class="petit" style="font-size:13px">Manao ahoana !</span><b style="font-size:18px;font-weight:600">${B.nom}</b></div>
@@ -104,18 +135,18 @@
     <div class="offres">${vedettes.map((p, i) => `<a href="#produit-${p.id}" class="offre${i === 0 ? ' noire' : ''}">
       ${img(p, 'vis')}${p.badge ? `<span class="sticker">${esc(p.badge)}</span>` : ''}
       <span class="petit">${esc(p.detail)}</span><b style="font-size:${i === 0 ? 17 : 16}px;font-weight:600">${esc(p.nom)}</b>
-      <span class="ligne" style="gap:8px;align-items:baseline"><span class="prix">${prixTxt(p)}</span>${p.ancienPrix ? `<span class="barre">${grp(p.ancienPrix)}</span>` : ''}</span></a>`).join('')}</div>
+      <span class="ligne" style="gap:8px;align-items:baseline"><span class="prix">${prixTxt(p)}</span>${p.ancienPrix ? `<span class="barre">${grp(p.ancienPrix)}</span>` : ''}</span>${p.ancienPrix && p.finOffre ? `<span class="petit fin-offre">Jusqu’au ${new Date(p.finOffre + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>` : ''}</a>`).join('')}</div>
     <a href="#vendre" class="carte ligne vendre-promo"><span class="rond lime" style="width:48px;height:48px">${ic('etiquette', 22)}</span>
       <span class="col" style="flex:1"><b style="font-size:15px;font-weight:600">Des pièces en trop ?</b><span class="petit">Vendez-les ici. Retrait au magasin, vous êtes payé dès la vente.</span></span>${ic('fleche', 18)}</a>
   </div>`;
   };
 
-  const carteProd = (p) => `<div class="prod">
+  const carteProd = (p) => `<div class="prod${enRupture(p) ? ' prod-rupture' : ''}">
     <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span>${p.particulier ? ligneVendeur(p.vendeurId, true) : ''}</a>
     <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixCourt(p)}</span>
-    ${!p.prix || p.particulier ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
-    ${p.stock != null && p.stock <= 2 && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
+    ${!p.prix || p.particulier || enRupture(p) ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
+    ${ligneStock(p)}</div>`;
   const TRANCHES = { scooters: [['-3500000', 'Moins de 3,5 M'], ['3500000-4500000', '3,5 à 4,5 M'], ['4500000-', 'Plus de 4,5 M']],
     autre: [['-20000', 'Moins de 20 000'], ['20000-100000', '20 000 à 100 000'], ['100000-', 'Plus de 100 000']] };
   const nbFiltres = () => (ui.f.prix ? 1 : 0) + (ui.f.cyl ? 1 : 0) + (ui.f.promo ? 1 : 0) + (ui.f.stock ? 1 : 0);
@@ -124,7 +155,7 @@
     if (ui.f.prix) { const [a, b] = ui.f.prix.split('-'); if (a && p.prix < +a) return false; if (b && p.prix >= +b) return false; }
     if (ui.f.cyl) { const [mi, ma] = String(ui.f.cyl).split('-').map(Number); if (![].concat(p.cylindree).some((c) => c >= mi && c <= ma)) return false; }
     if (ui.f.promo && !p.ancienPrix) return false;
-    if (ui.f.stock && !(p.stock > 0)) return false;
+    if (ui.f.stock && enRupture(p)) return false;
     return true;
   };
   const listeCatalogue = () => {
@@ -133,7 +164,7 @@
     const rang = (p) => { const s = p.particulier && statV(p.vendeurId); return s ? (s.top ? 2 : 0) + s.moy / 10 : 0; };
     if (!q && ui.cat === 'scooters' && ui.genre) l = l.filter((p) => (p.genre || 'scooter') === ui.genre);
     if (!q && ui.cat === 'occasion' && ui.groupe) l = l.filter((p) => p.groupe === ui.groupe);
-    l = l.slice().sort((a, b) => { if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
+    l = l.slice().sort((a, b) => { if (enRupture(a) !== enRupture(b)) return enRupture(a) ? 1 : -1; if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
   };
   const grilleHtml = () => {
@@ -148,7 +179,6 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.court || c.nom}</button>`).join('')}</div>
-    ${!ui.recherche && ui.cat === 'scooters' ? `<p class="petit ligne" style="margin:0;gap:6px">${ic('info', 16)}Tous nos scooters et motos sont d’occasion.</p>` : ''}
     ${!ui.recherche && ui.cat === 'scooters' ? `<div class="ligne" style="gap:6px">${[['', 'Tous'], ['scooter', 'Scooters'], ['moto', 'Motos']].map(([g, l]) => `<button class="puce" style="height:38px" aria-pressed="${ui.genre === g}" data-a="genre" data-id="${g}">${l}</button>`).join('')}</div>` : ''}
     <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
@@ -181,15 +211,15 @@
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
       <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div>
       <span class="mention-photo">${p.particulier ? 'Photo du vendeur' : 'Photo non contractuelle'}</span></div>
-    ${p.photos && p.photos.length > 1 ? `<div class="galerie" aria-label="Photos du vendeur">${p.photos.map((u, k) => `<figure><img src="${u}" alt="${esc(p.nom)}, photo ${k + 1}" class="photo-reelle"><figcaption>${esc((EMPLACEMENTS[k] || ['Photo'])[0])}</figcaption></figure>`).join('')}</div>
-      <div class="points" aria-hidden="true">${p.photos.map((_, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div><span class="compte" aria-live="polite">1/${p.photos.length}</span>` : img(p, 'hero-img')}
+    ${p.photos && p.photos.length > 1 ? `<div class="galerie${enRupture(p) ? ' gris' : ''}" aria-label="${p.particulier ? 'Photos du vendeur' : 'Photos du produit'}">${p.photos.map((u, k) => `<figure><img src="${u}" alt="${esc(p.nom)}, photo ${k + 1}" class="photo-reelle"><figcaption>${p.particulier ? esc((EMPLACEMENTS[k] || ['Photo'])[0]) : 'Photo ' + (k + 1)}</figcaption></figure>`).join('')}</div>
+      <div class="points" aria-hidden="true">${p.photos.map((_, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div><span class="compte" aria-live="polite">1/${p.photos.length}</span>` : img(p, 'hero-img' + (enRupture(p) ? ' gris' : ''))}
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
         <h1 class="h2" style="font-size:22px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
         <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
-        ${p.stock != null && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : p.stock > 2 ? ' ok' : ''}" style="align-self:flex-start;margin-top:4px">${stockTxt(p)}</span>` : ''}</div>
+        ${p.particulier ? '' : `<span class="ligne" style="gap:8px;margin-top:4px;flex-wrap:wrap">${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : ''}<span class="badge part">${esc(p.etat)}</span></span>`}</div>
       ${p.particulier ? `<div class="carte col avert" style="gap:8px"><span class="ligne" style="gap:6px;flex-wrap:wrap"><span class="badge part">${ic('etiquette', 14)}Vendu par un particulier · en l'état</span><span class="badge part" style="background:var(--bg)">${esc(p.groupe)}</span></span>
         <p class="petit" style="margin:0;font-size:13px;line-height:1.5">${B.nom} sert seulement d'intermédiaire : la boutique ne contrôle pas et ne garantit pas cette pièce. Vous l'examinez au comptoir avant de payer le reste ; si elle ne vous convient pas, vous la refusez et votre acompte est remboursé.</p>
         <a href="#conditions" class="petit" style="text-decoration:underline;min-height:36px;display:flex;align-items:center">Conditions de vente entre particuliers</a></div>${blocVendeur(p)}` : ''}
@@ -204,7 +234,8 @@
         <a class="rond lime" href="tel:${B.telephone.replace(/\s/g, '')}" aria-label="Appeler la boutique au ${esc(B.telephone)}">${ic('tel')}</a></div>
     </div></div>
     <div class="basbar">${rondPanier().replace('class="rond"', 'class="rond" style="width:54px;height:54px;background:var(--bg)"')}
-      ${p.particulier ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.etatAnnonce !== 'en_ligne' ? ' disabled' : ''}>${p.etatAnnonce !== 'en_ligne' ? 'Déjà réservée' : 'Réserver · acompte ' + ar(acompteDe(p.prix))}</button>` : p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.stock === 0 ? ' disabled' : ''}>${p.stock === 0 ? 'Sur commande : appelez-nous' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
+      ${p.particulier ? `<button class="btn" data-a="ajouter" data-id="${p.id}"${p.etatAnnonce !== 'en_ligne' ? ' disabled' : ''}>${p.etatAnnonce !== 'en_ligne' ? 'Déjà réservée' : 'Réserver · acompte ' + ar(acompteDe(p.prix))}</button>` : enRupture(p) ? ((alertes[p.id] || []).some((a) => client && a.client === client.nom + '|' + (client.email || client.methode)) ? `<button class="btn clair" disabled>${ic('check', 20)}Vous serez prévenu</button>` : `<button class="btn" data-a="prevenir" data-id="${p.id}">${ic('cloche', 20)}Me prévenir quand il revient</button>`)
+        : p.prix ? `<button class="btn" data-a="ajouter" data-id="${p.id}">${p.genre || p.cat === 'scooters' ? 'Réserver' : 'Ajouter au panier'}</button>` : `<a class="btn" style="background:#1FAF5A;color:#fff" href="${waPrix(p)}" target="_blank" rel="noopener">${ic('bulle', 20)}Demander le prix</a>`}</div>`;
   };
 
   V.panier = () => {
@@ -338,7 +369,7 @@
     <a href="#vendre"><span class="ico">${ic('etiquette', 18)}</span><span style="flex:1;font-weight:500">Vendre une pièce</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
     <a href="#annonces"><span class="ico">${ic('grille', 18)}</span><span style="flex:1;font-weight:500">Mes annonces</span>${annonces.filter((x) => x.proprio).length ? `<span class="petit">${annonces.filter((x) => x.proprio).length}</span>` : ''}${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
     <a href="#conditions"><span class="ico">${ic('bouclier', 18)}</span><span style="flex:1;font-weight:500">Conditions entre particuliers</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
-    <a href="#validation"><span class="ico">${ic('check', 18)}</span><span style="flex:1;font-weight:500">Espace boutique (démo)</span>${annonces.filter((x) => x.etat === 'attente').length ? `<span class="badge">${annonces.filter((x) => x.etat === 'attente').length}</span>` : ''}${ic('fleche', 16, 'style="color:var(--muted)"')}</a></nav>
+    <a href="#admin"><span class="ico">${ic('cle', 18)}</span><span style="flex:1;font-weight:500">Espace boutique (démo)</span>${annonces.filter((x) => x.etat === 'attente').length + nbAlertes() ? `<span class="badge">${annonces.filter((x) => x.etat === 'attente').length + nbAlertes()}</span>` : ''}${ic('fleche', 16, 'style="color:var(--muted)"')}</a></nav>
   <nav class="carte menu" style="padding:4px 16px" aria-label="Aide et réglages">
     <a href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener"><span class="ico">${ic('bulle', 18)}</span><span style="flex:1;font-weight:500">Aide et contact WhatsApp</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
     <a href="tel:${B.telephone.replace(/\s/g, '')}"><span class="ico">${ic('tel', 18)}</span><span style="flex:1;font-weight:500">Appeler · ${esc(B.telephone)}</span>${ic('fleche', 16, 'style="color:var(--muted)"')}</a>
@@ -421,7 +452,7 @@
       <span class="petit">Vendeur : ${esc(x.vendeur.nom)} · +261 ${esc(x.vendeur.tel)}</span></div></div>
       ${(x.photos || []).length > 1 ? `<div class="defile" style="gap:6px">${x.photos.map((u) => `<img src="${u}" alt="" class="photo-reelle" style="width:86px;height:86px;flex-shrink:0">`).join('')}</div>` : ''}
       ${x.description ? `<p class="petit" style="margin:0;font-size:13px">${esc(x.description)}</p>` : ''}${boutons}</div>`;
-    return `<div class="ecran">${entete('Espace boutique', 'compte')}
+    return `<div class="ecran">${entete('Annonces particuliers', 'admin')}
     <p class="demo" style="margin:0">Démonstration : dans la vraie app, cet écran sera réservé à votre compte boutique. Le numéro du vendeur n’apparaît qu’ici.</p>
     <h2 class="h2">Annonces à valider <span class="petit">(${att.length})</span></h2>
     ${att.length ? att.map((x) => fiche(x, `<div class="choix"><button class="btn clair" style="height:46px" data-a="refuser" data-id="${x.id}">Refuser</button><button class="btn" style="height:46px" data-a="valider" data-id="${x.id}">Mettre en ligne</button></div>`)).join('') : '<p class="petit" style="margin:0">Aucune annonce en attente.</p>'}
@@ -488,6 +519,115 @@
     ${l.length ? `<div class="grille">${l.map(carteProd).join('')}</div>` : '<p class="petit">Aucune pièce en vente pour le moment.</p>'}</div>`;
   };
 
+  /* ---------- Espace admin : articles, prix, stock, offres ----------
+     Patron : tous les droits. Vendeur du magasin : stock uniquement.
+     En démo, on choisit son rôle ; avec Firebase, le rôle viendra du compte de connexion. */
+  const RAYONS = D.categories.filter((c) => c.id !== 'occasion');
+  const estPatron = () => admin && admin.role === 'patron';
+  const nbOffres = (sauf) => D.produits.filter((p) => p.offre && p.id !== sauf).length;
+  const nbAlertes = () => Object.values(alertes).reduce((s, l) => s + l.length, 0);
+  const prixAdm = (p) => p.prix ? ar(p.prix) : '<span style="color:var(--warn)">Prix à remplir</span>';
+  const pas = (id, n) => `<div class="pas"><button data-a="adm-stock" data-id="${id}|-1" aria-label="Retirer 1 du stock">${ic('moins', 16)}</button><span aria-live="polite">${n == null ? '–' : n}</span><button class="plus" data-a="adm-stock" data-id="${id}|1" aria-label="Ajouter 1 au stock">${ic('plus', 16)}</button></div>`;
+  const ligneAdm = (p) => `<div class="adm-ligne${enRupture(p) ? ' prod-rupture' : ''}"><a href="#article-${p.id}" class="ligne" style="gap:12px;flex:1;min-width:0">
+      <span class="vign" style="width:56px;height:56px">${img(p)}</span>
+      <span class="col" style="gap:2px;min-width:0"><b class="coupe" style="font-size:14px;font-weight:600">${esc(p.nom)}</b>
+        <span class="petit coupe">${esc(p.etat)} · ${prixAdm(p)}</span>
+        <span class="ligne" style="gap:6px">${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : '<span class="petit">Stock non renseigné</span>'}${p.offre ? `<span class="badge">${ic('etoile', 11, 'fill="currentColor"')} Offre</span>` : ''}${(alertes[p.id] || []).length ? `<span class="badge part">${ic('cloche', 12)}${alertes[p.id].length}</span>` : ''}</span></span></a>
+      ${pas(p.id, p.stock)}</div>`;
+  const listeAdm = () => {
+    const q = (ui.admQ || '').trim().toLowerCase(), f = ui.admF || 'tous';
+    const l = D.produits.filter((p) => (!q || (p.nom + ' ' + p.detail).toLowerCase().includes(q))
+      && (f === 'tous' || (f === 'ruptures' ? enRupture(p) : f === 'offres' ? p.offre : f === 'prix' ? !p.prix : f === 'alertes' ? (alertes[p.id] || []).length : p.cat === f)));
+    return l.length ? l.map(ligneAdm).join('') : '<p class="petit" style="margin:8px 0">Aucun article.</p>';
+  };
+  V.admin = () => {
+    if (!admin) return `<div class="ecran">${entete('Espace boutique', 'compte')}
+      <div class="carte col" style="gap:12px"><h2 class="h2" style="font-size:18px">Qui êtes-vous ?</h2>
+        <button class="btn" data-a="adm-role" data-id="patron">${ic('cle', 20)}Patron · tous les droits</button>
+        <button class="btn clair" data-a="adm-role" data-id="vendeur">${ic('user', 20)}Vendeur du magasin · stock</button>
+        <p class="demo" style="margin:0">Démonstration : n’importe qui peut entrer ici. Dans la vraie app, l’accès sera lié à votre compte et à celui de vos vendeurs (Firebase).</p></div></div>`;
+    const ruptures = D.produits.filter(enRupture).length, sansPrix = D.produits.filter((p) => !p.prix).length, att = annonces.filter((x) => x.etat === 'attente').length;
+    const tuile = (n, l, f, alerte) => `<button class="tuile${ui.admF === f ? ' on' : ''}" data-a="adm-filtre" data-id="${f}"><b style="${alerte && n ? 'color:var(--warn)' : ''}">${n}</b><span class="petit">${l}</span></button>`;
+    return `<div class="ecran">${entete('Espace boutique', 'compte', '<button class="rond" data-a="adm-sortir" aria-label="Quitter l’espace boutique">' + ic('sortie') + '</button>')}
+    <div class="ligne entre"><span class="badge part">${estPatron() ? ic('cle', 14) + 'Patron · tous les droits' : ic('user', 14) + 'Vendeur · stock uniquement'}</span>
+      ${estPatron() ? `<a href="#article-nouveau" class="btn" style="width:auto;height:44px;padding:0 16px;font-size:14px">${ic('plus', 18)}Ajouter un article</a>` : ''}</div>
+    <div class="tuiles">${tuile(ruptures, 'En rupture', 'ruptures', true)}${tuile(nbOffres() + '/' + MAX_OFFRES, 'Offres du moment', 'offres')}${tuile(nbAlertes(), 'Clients à prévenir', 'alertes', true)}${tuile(sansPrix, 'Sans prix', 'prix', true)}</div>
+    <a href="#validation" class="carte ligne" style="gap:12px;padding:12px 16px"><span class="ico">${ic('etiquette', 18)}</span><span style="flex:1;font-weight:500">Annonces des particuliers</span>${att ? `<span class="badge">${att} à valider</span>` : ''}${ic('fleche', 16)}</a>
+    <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="adm-q" value="${esc(ui.admQ || '')}" placeholder="Chercher un article" aria-label="Chercher un article"></label>
+    <div class="defile" style="gap:6px">${[['tous', 'Tous'], ...RAYONS.map((c) => [c.id, c.court || c.nom])].map(([f, l]) => `<button class="puce" style="height:38px" aria-pressed="${(ui.admF || 'tous') === f}" data-a="adm-filtre" data-id="${f}">${l}</button>`).join('')}</div>
+    <div class="carte" id="adm-liste" style="padding:4px 14px">${listeAdm()}</div>
+    <p class="petit" style="margin:0">Le stock se met aussi à jour tout seul à chaque commande confirmée.</p></div>`;
+  };
+
+  const ancienStocke = (id) => { const m = catalogue.modifs[id]; if (m && 'ancienPrix' in m) return m.ancienPrix; const o = BASE.concat(catalogue.ajouts).find((x) => x.id === id); return o ? o.ancienPrix : null; };
+  const brouillon = (p) => ({ id: p ? p.id : '', nom: p ? p.nom : '', detail: p ? p.detail : '', cat: p ? p.cat : 'pieces', genre: p ? (p.genre || 'scooter') : 'scooter', etat: p ? p.etat : 'Neuf',
+    prix: p && p.prix ? String(p.prix) : '', stock: p && p.stock != null ? String(p.stock) : '', compat: p ? (p.compat || '') : '', description: p ? (p.description || '') : '',
+    photos: p ? (p.photos && p.photos.length ? p.photos.slice() : [p.img]) : [], offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
+  V.article = (id) => {
+    if (!admin) { location.hash = 'admin'; return ''; }
+    const nouveau = id === 'nouveau', p = nouveau ? null : D.produits.find((x) => x.id === id);
+    if (!nouveau && !p) return V.introuvable();
+    if (nouveau && !estPatron()) { location.hash = 'admin'; return ''; }
+    if (ui.artId !== id) { ui.artId = id; ui.art = brouillon(p); }
+    const a = ui.art, P = estPatron(), ro = P ? '' : ' disabled', veh = a.cat === 'scooters';
+    const al = alertes[id] || [];
+    const seg = (cle, opts) => `<div class="seg" style="grid-template-columns:repeat(${opts.length},minmax(0,1fr))">${opts.map(([v, l]) => `<button type="button" aria-pressed="${a[cle] === v}" data-a="art-choix" data-id="${cle}|${v}"${ro}>${l}</button>`).join('')}</div>`;
+    const verrou = P ? '' : `<span class="petit ligne" style="gap:6px">${ic('bouclier', 14)}Seul le patron peut modifier ce champ.</span>`;
+    return `<div class="ecran">${entete(nouveau ? 'Nouvel article' : 'Modifier l’article', 'admin')}
+    <form class="col" style="gap:14px" data-form="article" novalidate>
+    <div class="carte col" style="gap:10px"><div class="ligne entre"><b style="font-size:15px;font-weight:600">Photos</b><span class="petit">${a.photos.filter(Boolean).length}/5 · la 1re est la principale</span></div>
+      <div class="adm-photos">${[0, 1, 2, 3, 4].map((k) => a.photos[k] ? `<div class="emplacement plein"><img src="${a.photos[k]}" alt="Photo ${k + 1}">${P ? `<button type="button" class="rond" data-a="art-photo-suppr" data-id="${k}" aria-label="Retirer la photo ${k + 1}">${ic('moins', 16)}</button>` : ''}</div>`
+        : `<label class="emplacement"${P ? '' : ' style="opacity:.5"'}>${ic('photo', 22)}<span class="petit">${k ? 'Photo ' + (k + 1) : 'Principale'}</span>${P ? `<input type="file" accept="image/*" data-in="a-photo" data-slot="${k}" class="sr">` : ''}</label>`).join('')}</div>
+      <span class="petit">Les photos restent « non contractuelles » dans l’app.</span></div>
+    <div class="carte col" style="gap:12px">
+      ${champ('a-nom', 'Nom de l’article', `<input id="a-nom" class="saisie" data-in="a-nom" value="${esc(a.nom)}" placeholder="Ex. Yamaha Cygnus 3"${ro}>`)}
+      ${champ('a-detail', 'Détail court', `<input id="a-detail" class="saisie" data-in="a-detail" value="${esc(a.detail)}" placeholder="${veh ? 'Ex. 125 cc · Scooter' : 'Ex. Plaquettes + disque'}"${ro}>`)}
+      <div class="col" style="gap:6px"><span class="lib">Rayon</span>${seg('cat', RAYONS.map((c) => [c.id, c.court || c.nom]))}</div>
+      ${veh ? `<div class="col" style="gap:6px"><span class="lib">Type</span>${seg('genre', [['scooter', 'Scooter'], ['moto', 'Moto']])}</div>` : ''}
+      <div class="col" style="gap:6px"><span class="lib">État</span>${seg('etat', [['Occasion', 'Occasion'], ['Neuf', 'Neuf']])}</div>
+      ${veh ? '' : champ('a-compat', 'Modèles compatibles', `<input id="a-compat" class="saisie" data-in="a-compat" value="${esc(a.compat)}" placeholder="Ex. Cygnus 1 à 4, Kymco G6"${ro}>`)}
+      ${champ('a-desc', 'Description', `<textarea id="a-desc" class="saisie" data-in="a-desc" rows="3" style="height:auto;padding:12px 14px"${ro}>${esc(a.description)}</textarea>`)}
+      ${verrou}</div>
+    <div class="carte col" style="gap:12px">
+      ${champ('a-prix', 'Prix (Ariary)', `<input id="a-prix" class="saisie" inputmode="numeric" data-in="a-prix" value="${esc(a.prix)}" placeholder="${veh ? 'Vide = « Sur demande »' : 'Ex. 45000'}"${ro}>`, P ? `<span id="a-prix-aide">${+a.prix ? 'soit ' + fmg(+a.prix) + ' · affiché ' + ar(+a.prix) : veh ? 'Sans prix, le client demande le prix sur WhatsApp. Avec un prix, il peut réserver.' : ''}</span>` : '')}
+      ${verrou}
+      <div class="col" style="gap:6px"><label class="lib" for="a-stock">Stock${veh ? ' (nombre de véhicules de ce modèle)' : ''}</label>
+        <div class="ligne" style="gap:10px"><div class="pas"><button type="button" data-a="art-stock" data-id="-1" aria-label="Retirer 1">${ic('moins', 16)}</button>
+          <input id="a-stock" data-in="a-stock" inputmode="numeric" value="${esc(a.stock)}" placeholder="–" style="width:56px;text-align:center;font-size:16px;font-weight:600;border:none;background:transparent" aria-label="Quantité en stock">
+          <button type="button" class="plus" data-a="art-stock" data-id="1" aria-label="Ajouter 1">${ic('plus', 16)}</button></div>
+          <button type="button" class="btn clair" style="width:auto;height:44px;padding:0 14px;font-size:14px" data-a="art-rupture">Mettre en rupture</button></div>
+        <span class="petit">${a.stock === '0' ? 'Le produit sera grisé avec le bouton « Me prévenir quand il revient ».' : a.stock === '' ? 'Vide = stock non affiché.' : 'Affiché sous le produit : « ' + stockTxt({ stock: +a.stock }) + ' ».'}</span></div></div>
+    ${P ? `<div class="carte col" style="gap:12px"><button type="button" class="accepte" role="checkbox" aria-checked="${a.offre}" data-a="art-offre"><span class="case">${a.offre ? ic('check', 16, 'stroke-width="2.4"') : ''}</span><span><b style="font-weight:600">Offre du moment</b><br><span class="petit">Affichée sur l’accueil · ${nbOffres(id) + (a.offre ? 1 : 0)}/${MAX_OFFRES} utilisées</span></span></button>
+      ${a.offre ? `<div class="choix">${champ('a-ancien', 'Ancien prix barré (Ar)', `<input id="a-ancien" class="saisie" inputmode="numeric" data-in="a-ancien" value="${esc(a.ancienPrix)}" placeholder="Ex. 53000">`)}${champ('a-fin', 'Fin de l’offre', `<input id="a-fin" class="saisie" type="date" data-in="a-fin" value="${esc(a.finOffre)}" min="${aujourdhui()}">`)}</div>
+        <span class="petit">L’offre disparaît seule après la date de fin. Sans ancien prix, l’article est mis à la une sans prix barré.</span>` : ''}</div>` : ''}
+    ${!nouveau ? `<div class="carte col" style="gap:8px"><h2 class="h2" style="font-size:15px">${ic('cloche', 18)} Clients à prévenir <span class="petit">(${al.length})</span></h2>
+      ${al.length ? al.map((c, k) => `<div class="ligne entre" style="min-height:48px;border-top:${k ? '1px solid var(--line)' : 'none'}"><span class="col"><b style="font-size:14px;font-weight:600">${esc(c.nom)}</b><span class="petit">+261 ${esc(c.tel)} · ${esc(c.date)}</span></span>
+        <a class="rond lime" style="width:40px;height:40px" target="_blank" rel="noopener" href="https://wa.me/261${c.tel.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour, bonne nouvelle : ' + a.nom + ' est de nouveau disponible chez ' + B.nom + '.')}" aria-label="Prévenir ${esc(c.nom)} sur WhatsApp">${ic('bulle', 18)}</a></div>`).join('')
+        + `<button type="button" class="btn clair" style="height:44px" data-a="art-alertes-vider">Tous prévenus : vider la liste</button>` : '<span class="petit">Personne pour le moment. Quand l’article est en rupture, les clients peuvent demander à être prévenus.</span>'}</div>` : ''}
+    ${P && !nouveau && catalogue.ajouts.some((x) => x.id === id) ? `<button type="button" class="btn clair" style="height:46px;color:var(--err)" data-a="art-supprimer">Supprimer cet article</button>` : ''}
+    <p class="petit" role="alert" style="margin:0;color:var(--err);font-weight:500">${esc(a.erreur)}</p>
+    <button class="btn">${nouveau ? 'Ajouter l’article' : 'Enregistrer'}</button></form></div>`;
+  };
+  const enregistrerArticle = () => {
+    const a = ui.art, nouveau = ui.artId === 'nouveau', P = estPatron();
+    const prix = +a.prix || 0, stock = a.stock === '' ? null : Math.max(0, parseInt(a.stock, 10) || 0), ancien = +a.ancienPrix || 0;
+    const err = P && a.nom.trim().length < 2 ? 'Indiquez le nom de l’article.' : P && !a.photos.filter(Boolean).length ? 'Ajoutez au moins une photo.'
+      : P && a.cat !== 'scooters' && !prix ? 'Indiquez le prix.' : P && prix && prix < 100 ? 'Prix trop bas : vérifiez le montant.'
+      : P && a.offre && nbOffres(ui.artId) >= MAX_OFFRES ? `Déjà ${MAX_OFFRES} offres du moment : retirez-en une d’abord.`
+      : P && a.offre && ancien && ancien <= prix ? 'L’ancien prix doit être plus élevé que le prix actuel.' : '';
+    if (err) { a.erreur = err; rafraichir(); const e = document.querySelector('[role=alert]'); if (e) e.scrollIntoView({ block: 'center' }); return; }
+    const avant = nouveau ? null : D.produits.find((x) => x.id === ui.artId);
+    if (avant && avant.stock != null && avant.stock <= 0 && stock > 0 && (alertes[ui.artId] || []).length) toast('Pensez à prévenir les clients qui attendent');
+    if (!P) { majProduit(ui.artId, { stock }); sauver(); ui.artId = ''; toast('Stock enregistré'); aller('admin'); return; }
+    const photos = a.photos.filter(Boolean);
+    const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(),
+      description: a.description.trim() || a.nom.trim(), img: photos[0], photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
+    if (a.cat === 'scooters') champs.genre = a.genre; else champs.genre = undefined;
+    if (nouveau) { catalogue.ajouts.push(Object.assign({ id: 'art-' + Date.now().toString(36) }, champs)); appliquerCatalogue(); }
+    else majProduit(ui.artId, champs);
+    sauver(); ui.artId = ''; toast(nouveau ? 'Article ajouté' : 'Article enregistré'); aller('admin');
+  };
+
   V.introuvable = () => `<div class="ecran">${entete('Introuvable', 'accueil')}<div class="carte col vide"><b>Cette page n'existe pas ou plus.</b><a class="btn" href="#accueil" style="margin-top:8px">Retour à l'accueil</a></div></div>`;
 
   /* ---------- Panneaux du bas (ajout au panier, filtres) ---------- */
@@ -530,7 +670,7 @@
   let derniere = '';
   function route() {
     const h = decodeURIComponent(location.hash.slice(1)) || 'accueil';
-    const m = h.match(/^(accueil|catalogue|produit|panier|connexion|paiement|confirmation|suivi|compte|vendre|annonces|validation|conditions|vendeur)(?:-(.+))?$/);
+    const m = h.match(/^(accueil|catalogue|produit|panier|connexion|paiement|confirmation|suivi|compte|vendre|annonces|validation|conditions|vendeur|admin|article)(?:-(.+))?$/);
     const nom = m ? m[1] : 'introuvable';
     const html = (V[nom] || V.introuvable)(m && m[2]);
     if (!html) return; // redirection en cours
@@ -553,6 +693,9 @@
       if (p.particulier && (p.etatAnnonce !== 'en_ligne' || panier[id])) { toast(panier[id] ? 'Cette pièce unique est déjà dans votre panier' : 'Pièce déjà réservée'); return; }
       if (choixDe(p) && !ui.taille) { ui.tailleErreur = true; rafraichir(); const s = document.querySelector('.seg [data-a=taille]'); if (s) { s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus({ preventScroll: true }); } return; }
       const cle = choixDe(p) ? id + '@' + ui.taille : id;
+      const dejaPris = Object.entries(panier).filter(([c]) => decoupe(c).id === id).reduce((s, [, q]) => s + q, 0);
+      if (enRupture(p)) { toast('Produit en rupture de stock'); return; }
+      if (p.stock != null && dejaPris >= p.stock) { toast(`Plus que ${p.stock} en stock`); return; }
       panier[cle] = (panier[cle] || 0) + 1; sauver(); rafraichir();
       ouvrirFeuille('ajout', feuilleAjout(p, choixDe(p) ? ui.taille : ''), 'Ajouté au panier');
     },
@@ -563,7 +706,8 @@
     filtre(v) { const [cle, val] = v.split(':'); const actuel = String(ui.f[cle]); ui.f[cle] = actuel === val ? null : (val === 'true' ? true : val); majFiltres(); },
     'filtres-raz'() { ui.f = { prix: null, cyl: null, promo: null, stock: null }; majFiltres(); if (feuilleType !== 'filtres') rafraichir(); },
     suggestion(t) { ui.recherche = t; memoRecherche(t); rafraichir(); },
-    plus(id) { const p = produit(decoupe(id).id); if (p && p.particulier) { toast('Pièce unique'); return; } panier[id] = (panier[id] || 0) + 1; sauver(); rafraichir(); },
+    plus(id) { const p = produit(decoupe(id).id); if (p && p.particulier) { toast('Pièce unique'); return; }
+      if (p && p.stock != null && Object.entries(panier).filter(([c]) => decoupe(c).id === p.id).reduce((s, [, q]) => s + q, 0) >= p.stock) { toast(`Plus que ${p.stock} en stock`); return; } panier[id] = (panier[id] || 0) + 1; sauver(); rafraichir(); },
     moins(id) { panier[id] = (panier[id] || 0) - 1; if (panier[id] <= 0) delete panier[id]; sauver(); rafraichir(); },
     vider() { panier = {}; sauver(); rafraichir(); },
     cat(id) { ui.cat = id; ui.recherche = ''; ui.f = { prix: null, cyl: null, promo: null, stock: null }; aller('catalogue-' + id); },
@@ -600,6 +744,7 @@
       const c = { code: 'DMS-' + num, date: new Date().toLocaleDateString('fr-FR'), lignes: t.lignes.map(({ p, q, taille }) => ({ id: p.id, taille, q, prix: p.prix, vendeurId: p.vendeurId || '' })),
         total: t.total, mode: ui.mode, paiement: ui.paiement, statut: 0, tel: client.tel, acompte: t.acompte };
       t.lignes.filter((l) => l.p.particulier).forEach((l) => { const x = annonces.find((y) => y.id === l.p.id); if (x) { x.etat = 'reservee'; x.reserveLe = Date.now(); x.commande = c.code; } });
+      t.lignes.filter((l) => !l.p.particulier && l.p.stock != null).forEach((l) => majProduit(l.p.id, { stock: Math.max(0, l.p.stock - l.q) }));
       commandes.push(c); panier = {}; ui.promo = null; ui.promoSaisie = ''; ui.promoMsg = ''; sauver();
       aller('confirmation-' + c.code);
     },
@@ -620,9 +765,37 @@
     },
     'vente-accepte'() { ui.vente.accepte = !ui.vente.accepte; ui.vente.erreur = ''; rafraichir(); },
     'photo-suppr'(k) { ui.vente.photos[+k] = ''; rafraichir(); },
+    /* Espace admin */
+    'adm-role'(r) { admin = { role: r }; sauver(); toast(r === 'patron' ? 'Connecté en patron' : 'Connecté en vendeur'); rafraichir(); },
+    'adm-sortir'() { admin = null; ui.artId = ''; sauver(); aller('compte'); },
+    'adm-filtre'(f) { ui.admF = ui.admF === f && f !== 'tous' ? 'tous' : f; rafraichir(); },
+    'adm-stock'(v) {
+      const [id, d] = v.split('|'), p = D.produits.find((x) => x.id === id); if (!p) return;
+      const n = Math.max(0, (p.stock == null ? 0 : p.stock) + +d);
+      if (p.stock != null && p.stock <= 0 && n > 0 && (alertes[id] || []).length) toast(pl(alertes[id].length, 'client') + ' à prévenir : ouvrez l’article');
+      majProduit(id, { stock: n }); sauver(); const l = document.getElementById('adm-liste'); if (l) { const y = window.scrollY; rafraichir(); window.scrollTo(0, y); }
+    },
+    'art-choix'(v) { if (!estPatron()) return; const [k, val] = v.split('|'); ui.art[k] = val; if (k === 'cat' && val === 'scooters' && !ui.art.etat) ui.art.etat = 'Occasion'; ui.art.erreur = ''; rafraichir(); },
+    'art-stock'(d) { const n = Math.max(0, (parseInt(ui.art.stock, 10) || 0) + +d); ui.art.stock = String(n); rafraichir(); },
+    'art-rupture'() { ui.art.stock = '0'; rafraichir(); },
+    'art-offre'() { if (!ui.art.offre && nbOffres(ui.artId) >= MAX_OFFRES) { toast(`Déjà ${MAX_OFFRES} offres : retirez-en une d’abord`); return; } ui.art.offre = !ui.art.offre; rafraichir(); },
+    'art-photo-suppr'(k) { ui.art.photos.splice(+k, 1); rafraichir(); },
+    'art-alertes-vider'() { delete alertes[ui.artId]; sauver(); toast('Liste vidée'); rafraichir(); },
+    'art-supprimer'() { if (!confirmSuppr) { confirmSuppr = true; toast('Touchez encore pour supprimer définitivement'); setTimeout(() => { confirmSuppr = false; }, 3000); return; }
+      catalogue.ajouts = catalogue.ajouts.filter((x) => x.id !== ui.artId); appliquerCatalogue(); confirmSuppr = false; ui.artId = ''; sauver(); toast('Article supprimé'); aller('admin'); },
+    /* Client : être prévenu du retour en stock */
+    prevenir(id) {
+      if (!client) { ui.retour = 'produit-' + id; aller('connexion'); return; }
+      ouvrirFeuille('prevenir', `<form class="col" style="gap:12px" data-form="prevenir" data-id="${id}"><b style="font-size:17px">Être prévenu du retour</b>
+        <span class="petit" style="font-size:13px">La boutique vous écrit sur WhatsApp dès que « ${esc(produit(id).nom)} » est de nouveau disponible.</span>
+        <label class="lib" for="prev-tel">Votre numéro</label><input id="prev-tel" class="saisie" type="tel" inputmode="numeric" value="${esc(client.tel || '')}" placeholder="34 00 000 00">
+        <span class="petit" id="prev-err" role="alert" style="color:var(--err)"></span>
+        <button class="btn">Me prévenir</button><button type="button" class="btn clair" data-a="fermer-feuille">Annuler</button></form>`, 'Être prévenu');
+    },
     'demo-statut'(code) { const c = trouverCmd(code); if (c && c.statut < 3) { c.statut++; sauver(); rafraichir(); } }
   };
 
+  let confirmSuppr = false;
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-a]');
     if (!el || !actions[el.dataset.a]) return;
@@ -639,6 +812,13 @@
     if (k === 'promo') ui.promoSaisie = e.target.value;
     if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
     if (k === 'email') ui.email = e.target.value;
+    if (k === 'adm-q') { ui.admQ = e.target.value; const l = document.getElementById('adm-liste'); if (l) l.innerHTML = listeAdm(); }
+    if (k && k.startsWith('a-') && k !== 'a-photo' && ui.art) {
+      const champ = { 'a-nom': 'nom', 'a-detail': 'detail', 'a-compat': 'compat', 'a-desc': 'description', 'a-prix': 'prix', 'a-stock': 'stock', 'a-ancien': 'ancienPrix', 'a-fin': 'finOffre' }[k];
+      if (k === 'a-prix' || k === 'a-stock' || k === 'a-ancien') e.target.value = e.target.value.replace(/\D/g, '').slice(0, k === 'a-stock' ? 4 : 10);
+      ui.art[champ] = e.target.value; ui.art.erreur = '';
+      if (k === 'a-prix') { const h = document.getElementById('a-prix-aide'); if (h) h.textContent = +e.target.value ? 'soit ' + fmg(+e.target.value) + ' · affiché ' + ar(+e.target.value) : ''; }
+    }
     if (k === 'v-piece') { ui.vente.piece = e.target.value; const n = e.target.value.split('|')[1]; if (!ui.vente.titre || ui.vente.titreAuto) { ui.vente.titre = n === 'Autres' ? '' : n; ui.vente.titreAuto = true; } ui.vente.erreur = ''; rafraichir(); return; }
     if (k === 'v-titre') ui.vente.titreAuto = false;
     if (k && k.startsWith('v-') && k !== 'v-photo') {
@@ -667,6 +847,14 @@
 
   /* Photo de l'annonce : réduite à 900 px de large pour rester légère sur une connexion lente. */
   document.addEventListener('change', (e) => {
+    if (e.target.dataset && e.target.dataset.in === 'a-photo' && e.target.files && e.target.files[0] && ui.art) {
+      const f = e.target.files[0]; if (!/^image\//.test(f.type)) { ui.art.erreur = 'Choisissez une image.'; rafraichir(); return; }
+      const url = URL.createObjectURL(f), im = new Image();
+      im.onload = () => { const k = Math.min(1, 900 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ui.art.photos.push(c.toDataURL('image/jpeg', 0.75)); ui.art.photos = ui.art.photos.filter(Boolean).slice(0, 5); ui.art.erreur = ''; rafraichir(); };
+      im.onerror = () => { ui.art.erreur = 'Impossible de lire cette photo.'; rafraichir(); };
+      im.src = url; return;
+    }
     if (!(e.target.dataset && e.target.dataset.in === 'v-photo') || !e.target.files || !e.target.files[0]) return;
     const slot = +e.target.dataset.slot || 0; const f = e.target.files[0]; if (!/^image\//.test(f.type)) { ui.vente.erreur = 'Choisissez une image.'; rafraichir(); return; }
     const url = URL.createObjectURL(f), im = new Image();
@@ -691,6 +879,15 @@
       if (!vendeurs.moi) vendeurs.moi = { alias: 'Vendeur n°' + String(50 + Math.floor(Math.random() * 49)), ventes: 0, notes: [], tags: {} };
       ui.vente = { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' };
       sauver(); toast('Annonce envoyée à la boutique'); aller('annonces'); return;
+    }
+    if (f === 'article') { enregistrerArticle(); return; }
+    if (f === 'prevenir') {
+      const id = e.target.dataset.id, ch = e.target.querySelector('#prev-tel').value.replace(/\D/g, '').replace(/^261/, '').replace(/^0/, '');
+      if (!/^3[2-47-8]\d{7}$/.test(ch)) { e.target.querySelector('#prev-err').textContent = 'Numéro invalide : 9 chiffres commençant par 32, 33, 34, 37 ou 38.'; return; }
+      const tel = ch.replace(/^(\d{2})(\d{2})(\d{3})(\d{2})$/, '$1 $2 $3 $4'); client.tel = client.tel || tel;
+      const cle = client.nom + '|' + (client.email || client.methode);
+      alertes[id] = (alertes[id] || []).filter((a) => a.client !== cle).concat({ client: cle, nom: client.nom || 'Client', tel, date: new Date().toLocaleDateString('fr-FR') });
+      sauver(); fermerFeuille(); toast('C’est noté : nous vous prévenons'); rafraichir(); return;
     }
     if (f === 'recherche') { ui.recherche = e.target.q.value; memoRecherche(ui.recherche); aller('catalogue'); }
     if (f === 'promo') {
