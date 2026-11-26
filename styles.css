@@ -284,13 +284,8 @@ textarea{font:inherit;color:inherit}
 .ecran>.ligne>.h2,.ecran>.h2{display:inline-block;background:linear-gradient(transparent 68%,color-mix(in srgb,var(--lime) 55%,transparent) 68%);padding:0 2px;margin-left:-2px}
 .badge.part{background:var(--lime-soft);color:var(--ok)}
 @media (prefers-color-scheme:light){
-  :root{--nav-on:#5BE52B;--nav-on-txt:#0E0F0D;--mur-haut:#CFF5BA;--mur-bas:#F1FCEB;--sol:#E2F5D8;--sol-ligne:rgba(91,229,43,.45);--ok:#1E7A12}
-  body,#app{background:linear-gradient(180deg,#EDFBE5 0,#FFFFFF 340px) no-repeat,#FFFFFF}
-  .prod .boite,.mini .boite{background:linear-gradient(180deg,#E4F9D8,#F6FDF2)}
-  .banniere .fond{background:linear-gradient(135deg,#5BE52B,#C9F7B0 70%)}
-  .banniere .fond::before{display:none}
-  .banniere b span{background:#0E0F0D;color:#5BE52B;padding:0 6px;border-radius:6px}
-  .banniere .sous{color:#1F2A1A}
+  :root{--nav-on:#5BE52B;--nav-on-txt:#0E0F0D;--ok:#1E7A12}
+  body,#app{background:#FFFFFF}
 }
 @media (prefers-color-scheme:dark){.badge.part{background:#1B2E14;color:#7CF052}}
 /* Stock et état sous chaque produit, rupture grisée */
@@ -319,3 +314,17 @@ textarea{font:inherit;color:inherit}
 .stock,.badge{white-space:nowrap}
 .pas>span{min-width:30px;text-align:center;font-weight:600}
 .adm-ligne .col .ligne{flex-wrap:wrap;row-gap:4px}
+
+/* ===== Fond des photos produits : gris clair + motif « pièces au trait » + halo blanc (choix M2) ===== */
+:root{--motif:url(img/motif-pieces.svg);--fond-photo-1:#F5F5F6;--fond-photo-2:#ECECEE;--halo:rgba(255,255,255,.85)}
+@media (prefers-color-scheme:dark){:root{--motif:url(img/motif-pieces-sombre.svg);--fond-photo-1:#1E1F1D;--fond-photo-2:#151614;--halo:rgba(255,255,255,.07)}}
+.hero{background:radial-gradient(45% 42% at 50% 55%,var(--halo) 0,transparent 72%),var(--motif),linear-gradient(180deg,var(--fond-photo-2),var(--fond-photo-1))!important}
+.hero .fili{display:none}
+.prod .boite,.mini .boite,.offre .boite-offre{background:radial-gradient(50% 50% at 50% 55%,var(--halo) 0,transparent 75%),var(--motif),linear-gradient(180deg,var(--fond-photo-1),var(--fond-photo-2))}
+/* ===== Taille des photos : toutes entières dans un cadre plus haut, même ligne de sol, ombre au sol ===== */
+.prod .boite{height:136px;align-items:center;padding:10px 8px 8px;overflow:hidden;position:relative}
+.prod .boite img:not(.rondimg):not(.photo-reelle){width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;position:relative;z-index:1}
+.prod .boite::after{content:"";position:absolute;left:18%;right:18%;bottom:9px;height:10px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.18),transparent)}
+.mini .boite{height:104px;align-items:center;padding:8px 6px 6px;overflow:hidden}
+.mini .boite img:not(.rondimg):not(.photo-reelle){width:100%;height:100%;object-fit:contain}
+@media (prefers-color-scheme:light){.banniere .fond{background:radial-gradient(40% 70% at 78% 60%,var(--halo) 0,transparent 75%),var(--motif),linear-gradient(135deg,var(--fond-photo-1),var(--fond-photo-2))}.banniere .fond::before{display:none}}
