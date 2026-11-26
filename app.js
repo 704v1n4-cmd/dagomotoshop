@@ -82,8 +82,9 @@
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
-  const prixTxt = (p) => p.prix ? ar(p.prix) : 'Prix sur demande';
-  const prixCourt = (p) => p.prix ? ar(p.prix) : 'Sur demande';
+  const parU = (p) => p.unite ? ' / ' + p.unite : '';
+  const prixTxt = (p) => p.prix ? ar(p.prix) + parU(p) : 'Prix sur demande';
+  const prixCourt = (p) => p.prix ? ar(p.prix) + parU(p) : 'Sur demande';
   const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + (ui.taille && p.versions ? ' ' + ui.taille : '') + ' (' + p.detail + ') ?')}`;
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Rupture de stock' : p.stock <= 2 ? `Plus que ${p.stock}` : `${p.stock} en stock`;
   const stockCls = (p) => p.stock <= 0 ? ' rupture' : p.stock <= 2 ? '' : ' ok';
@@ -218,7 +219,7 @@
         <h1 class="h2" style="font-size:22px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
-        <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
+        <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : (p.cat === 'scooters' ? 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.' : 'Écrivez-nous sur WhatsApp pour le prix.')}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
         ${p.particulier ? '' : `<span class="ligne" style="gap:8px;margin-top:4px;flex-wrap:wrap">${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : ''}<span class="badge part">${esc(p.etat)}</span></span>`}</div>
       ${p.particulier ? `<div class="carte col avert" style="gap:8px"><span class="ligne" style="gap:6px;flex-wrap:wrap"><span class="badge part">${ic('etiquette', 14)}Vendu par un particulier · en l'état</span><span class="badge part" style="background:var(--bg)">${esc(p.groupe)}</span></span>
         <p class="petit" style="margin:0;font-size:13px;line-height:1.5">${B.nom} sert seulement d'intermédiaire : la boutique ne contrôle pas et ne garantit pas cette pièce. Vous l'examinez au comptoir avant de payer le reste ; si elle ne vous convient pas, vous la refusez et votre acompte est remboursé.</p>
@@ -247,7 +248,7 @@
     return `<div class="ecran">${tete}
     <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
       <a href="#produit-${p.id}" class="vign sq-att">${img(p)}</a>
-      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${p.particulier ? 'Particulier · ' : ''}${esc(p.detail)}${taille ? (p.tailles ? ' · Taille ' : ' · ') + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
+      <div class="col" style="flex:1;gap:1px"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${p.particulier ? 'Particulier · ' : ''}${p.unite ? q + ' ' + p.unite + ' · ' : ''}${esc(p.detail)}${taille ? (p.tailles ? ' · Taille ' : ' · ') + esc(taille) : ''}</span><span class="prix" style="font-size:14px;margin-top:2px">${ar(p.prix * q)}</span></div>
       <div class="pas"><button data-a="moins" data-id="${esc(cle)}" aria-label="${q === 1 ? 'Retirer' : 'Diminuer la quantité de'} ${esc(p.nom)}">${ic('moins', 16)}</button><span aria-live="polite">${q}</span>
       <button class="plus" data-a="plus" data-id="${esc(cle)}"${p.particulier ? ' disabled style="opacity:.35"' : ''} aria-label="Augmenter la quantité de ${esc(p.nom)}">${ic('plus', 16)}</button></div></div>`).join('')}</div>
     <div class="choix" role="radiogroup" aria-label="Mode de retrait">
@@ -340,7 +341,7 @@
       <div class="etapes"><span class="rail"></span><span class="plein" style="width:${s * 25}%"></span>
       ${ETAPES.map(([l, i], k) => `<div class="etape ${k < s || s === 3 ? 'fait' : k === s ? 'encours' : ''}"><i>${ic(i)}</i>${l}</div>`).join('')}</div>
       <div class="ligne" style="background:var(--bg);border-radius:14px;padding:12px">${ic('horloge', 22)}<span style="font-size:13px">${MSG[s]}</span></div></div>
-    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${l.taille ? (p.tailles ? 'Taille ' : '') + esc(l.taille) + ' · ' : ''}× ${l.q}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
+    <div class="carte" style="padding:4px 14px">${c.lignes.map((l) => { const p = produit(l.id); return p ? `<div class="article"><span class="vign">${img(p)}</span><div class="col" style="flex:1"><b style="font-size:14px;font-weight:600">${esc(p.nom)}</b><span class="petit">${l.taille ? (p.tailles ? 'Taille ' : '') + esc(l.taille) + ' · ' : ''}× ${l.q}${p.unite ? ' ' + p.unite : ''}</span></div><span class="prix" style="font-size:14px">${ar(l.prix * l.q)}</span></div>` : ''; }).join('')}
       <div class="ligne entre" style="padding:12px 0;border-top:1px solid var(--line);font-weight:600"><span>Total</span><span class="prix">${ar(c.total)}</span></div></div>
     ${s === 3 ? noterHtml(c) : ''}
     <p class="petit" style="margin:0">Le statut est mis à jour par la boutique.</p>
