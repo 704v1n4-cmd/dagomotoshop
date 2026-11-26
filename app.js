@@ -78,7 +78,9 @@
   const tous = () => D.produits.concat(annonces.filter((x) => x.etat === 'en_ligne').map(deAnnonce));
   const produit = (id) => { const p = D.produits.find((x) => x.id === id); if (p) return p; const x = annonces.find((y) => y.id === id); return x ? deAnnonce(x) : undefined; };
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
-  const img = (p, cls) => `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" loading="lazy">`;
+  const ICO = window.DMS_ICONES_PIECES || {};
+  const icoSrc = (n) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='24' fill='#0E0F0D'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#5BE52B' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
+  const img = (p, cls) => p.icone && !p.photoReelle ? `<img src="${icoSrc(p.icone)}" alt="${esc(p.nom)}" class="sq icone-piece ${cls || ''}">` : `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
@@ -211,7 +213,7 @@
       <div class="ligne entre" style="position:relative;z-index:4"><button class="rond" data-a="retour" aria-label="Retour">${ic('retour')}</button>
       <span class="ligne" style="gap:10px"><button class="rond${fav ? ' lime' : ''}" data-a="favori" data-id="${p.id}" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${ic('coeur', 20, fav ? 'fill="currentColor"' : '')}</button>
       <button class="rond" data-a="partager" data-id="${p.id}" aria-label="Partager">${ic('partage')}</button></span></div>
-      <span class="mention-photo">${p.particulier ? 'Photo du vendeur' : 'Photo non contractuelle'}</span></div>
+      ${p.icone && !p.photoReelle ? '' : `<span class="mention-photo">${p.particulier ? 'Photo du vendeur' : 'Photo non contractuelle'}</span>`}</div>
     ${p.photos && p.photos.length > 1 ? `<div class="galerie${enRupture(p) ? ' gris' : ''}" aria-label="${p.particulier ? 'Photos du vendeur' : 'Photos du produit'}">${p.photos.map((u, k) => `<figure><img src="${u}" alt="${esc(p.nom)}, photo ${k + 1}" class="photo-reelle"><figcaption>${p.particulier ? esc((EMPLACEMENTS[k] || ['Photo'])[0]) : 'Photo ' + (k + 1)}</figcaption></figure>`).join('')}</div>
       <div class="points" aria-hidden="true">${p.photos.map((_, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div><span class="compte" aria-live="polite">1/${p.photos.length}</span>` : img(p, 'hero-img' + (enRupture(p) ? ' gris' : ''))}
     <div class="dessus">
@@ -563,7 +565,7 @@
   const ancienStocke = (id) => { const m = catalogue.modifs[id]; if (m && 'ancienPrix' in m) return m.ancienPrix; const o = BASE.concat(catalogue.ajouts).find((x) => x.id === id); return o ? o.ancienPrix : null; };
   const brouillon = (p) => ({ id: p ? p.id : '', nom: p ? p.nom : '', detail: p ? p.detail : '', cat: p ? p.cat : 'pieces', genre: p ? (p.genre || 'scooter') : 'scooter', etat: p ? p.etat : 'Neuf',
     prix: p && p.prix ? String(p.prix) : '', stock: p && p.stock != null ? String(p.stock) : '', compat: p ? (p.compat || '') : '', description: p ? (p.description || '') : '',
-    photos: p ? (p.photos && p.photos.length ? p.photos.slice() : [p.img]) : [], offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
+    photos: p ? (p.photos && p.photos.length ? p.photos.slice() : p.img ? [p.img] : []) : [], icone: p ? (p.icone || '') : '', offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
   V.article = (id) => {
     if (!admin) { location.hash = 'admin'; return ''; }
     const nouveau = id === 'nouveau', p = nouveau ? null : D.produits.find((x) => x.id === id);
@@ -586,6 +588,8 @@
       <div class="col" style="gap:6px"><span class="lib">Rayon</span>${seg('cat', RAYONS.map((c) => [c.id, c.court || c.nom]))}</div>
       ${veh ? `<div class="col" style="gap:6px"><span class="lib">Type</span>${seg('genre', [['scooter', 'Scooter'], ['moto', 'Moto']])}</div>` : ''}
       <div class="col" style="gap:6px"><span class="lib">État</span>${seg('etat', [['Occasion', 'Occasion'], ['Neuf', 'Neuf']])}</div>
+      ${veh ? '' : `<div class="col" style="gap:6px"><label class="lib" for="a-icone">Icône de la pièce <span class="petit">(à la place d’une photo)</span></label>
+        <div class="ligne" style="gap:10px">${a.icone ? `<img src="${icoSrc(a.icone)}" alt="" width="48" height="48" style="border-radius:12px;flex-shrink:0">` : ''}<select id="a-icone" class="saisie" data-in="a-icone"${ro}><option value="">Aucune : utiliser les photos</option>${Object.entries(D.piecesListe).map(([f, l]) => `<optgroup label="${esc(f)}">${l.map((n) => `<option${a.icone === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}<option${a.icone === 'Autres' ? ' selected' : ''}>Autres</option></select></div></div>`}
       ${veh ? '' : champ('a-compat', 'Modèles compatibles', `<input id="a-compat" class="saisie" data-in="a-compat" value="${esc(a.compat)}" placeholder="Ex. Cygnus 1 à 4, Kymco G6"${ro}>`)}
       ${champ('a-desc', 'Description', `<textarea id="a-desc" class="saisie" data-in="a-desc" rows="3" style="height:auto;padding:12px 14px"${ro}>${esc(a.description)}</textarea>`)}
       ${verrou}</div>
@@ -612,7 +616,7 @@
   const enregistrerArticle = () => {
     const a = ui.art, nouveau = ui.artId === 'nouveau', P = estPatron();
     const prix = +a.prix || 0, stock = a.stock === '' ? null : Math.max(0, parseInt(a.stock, 10) || 0), ancien = +a.ancienPrix || 0;
-    const err = P && a.nom.trim().length < 2 ? 'Indiquez le nom de l’article.' : P && !a.photos.filter(Boolean).length ? 'Ajoutez au moins une photo.'
+    const err = P && a.nom.trim().length < 2 ? 'Indiquez le nom de l’article.' : P && !a.photos.filter(Boolean).length && !(a.icone && a.cat !== 'scooters') ? 'Ajoutez au moins une photo ou choisissez une icône.'
       : P && a.cat !== 'scooters' && !prix ? 'Indiquez le prix.' : P && prix && prix < 100 ? 'Prix trop bas : vérifiez le montant.'
       : P && a.offre && nbOffres(ui.artId) >= MAX_OFFRES ? `Déjà ${MAX_OFFRES} offres du moment : retirez-en une d’abord.`
       : P && a.offre && ancien && ancien <= prix ? 'L’ancien prix doit être plus élevé que le prix actuel.' : '';
@@ -622,7 +626,7 @@
     if (!P) { majProduit(ui.artId, { stock }); sauver(); ui.artId = ''; toast('Stock enregistré'); aller('admin'); return; }
     const photos = a.photos.filter(Boolean);
     const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(),
-      description: a.description.trim() || a.nom.trim(), img: photos[0], photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
+      description: a.description.trim() || a.nom.trim(), img: photos[0] || '', icone: a.cat !== 'scooters' ? a.icone : '', photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
     if (a.cat === 'scooters') champs.genre = a.genre; else champs.genre = undefined;
     if (nouveau) { catalogue.ajouts.push(Object.assign({ id: 'art-' + Date.now().toString(36) }, champs)); appliquerCatalogue(); }
     else majProduit(ui.artId, champs);
@@ -814,6 +818,7 @@
     if (k === 'telcmd') { ui.telCmd = e.target.value; if (ui.telErreur) { ui.telErreur = ''; const a = document.getElementById('telcmd-aide'); if (a) { a.textContent = 'La boutique vous appelle ou vous écrit sur WhatsApp pour confirmer. Pas de SMS de code.'; a.style.color = ''; } } }
     if (k === 'email') ui.email = e.target.value;
     if (k === 'adm-q') { ui.admQ = e.target.value; const l = document.getElementById('adm-liste'); if (l) l.innerHTML = listeAdm(); }
+    if (k === 'a-icone' && ui.art) { ui.art.icone = e.target.value; ui.art.erreur = ''; rafraichir(); return; }
     if (k && k.startsWith('a-') && k !== 'a-photo' && ui.art) {
       const champ = { 'a-nom': 'nom', 'a-detail': 'detail', 'a-compat': 'compat', 'a-desc': 'description', 'a-prix': 'prix', 'a-stock': 'stock', 'a-ancien': 'ancienPrix', 'a-fin': 'finOffre' }[k];
       if (k === 'a-prix' || k === 'a-stock' || k === 'a-ancien') e.target.value = e.target.value.replace(/\D/g, '').slice(0, k === 'a-stock' ? 4 : 10);
