@@ -278,3 +278,18 @@ textarea{font:inherit;color:inherit}
 /* Cartes produit : une seule ligne de détail, prix sur une ligne, hauteurs régulières */
 .prod .col>.petit{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .prod .prix,.mini .prix{white-space:nowrap}
+/* ===== Vert lime du logo plus présent (version B : touches + fonds) ===== */
+.ajout{background:var(--lime);color:var(--on-lime)}
+[role=tab][aria-selected=true],.puce[aria-pressed=true]{background:var(--lime);color:var(--on-lime);border-color:var(--lime)}
+.ecran>.ligne>.h2,.ecran>.h2{display:inline-block;background:linear-gradient(transparent 68%,color-mix(in srgb,var(--lime) 55%,transparent) 68%);padding:0 2px;margin-left:-2px}
+.badge.part{background:var(--lime-soft);color:var(--ok)}
+@media (prefers-color-scheme:light){
+  :root{--nav-on:#5BE52B;--nav-on-txt:#0E0F0D;--mur-haut:#CFF5BA;--mur-bas:#F1FCEB;--sol:#E2F5D8;--sol-ligne:rgba(91,229,43,.45);--ok:#1E7A12}
+  body,#app{background:linear-gradient(180deg,#EDFBE5 0,#FFFFFF 340px) no-repeat,#FFFFFF}
+  .prod .boite,.mini .boite{background:linear-gradient(180deg,#E4F9D8,#F6FDF2)}
+  .banniere .fond{background:linear-gradient(135deg,#5BE52B,#C9F7B0 70%)}
+  .banniere .fond::before{display:none}
+  .banniere b span{background:#0E0F0D;color:#5BE52B;padding:0 6px;border-radius:6px}
+  .banniere .sous{color:#1F2A1A}
+}
+@media (prefers-color-scheme:dark){.badge.part{background:#1B2E14;color:#7CF052}}
