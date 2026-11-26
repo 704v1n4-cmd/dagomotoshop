@@ -79,7 +79,7 @@
   const produit = (id) => { const p = D.produits.find((x) => x.id === id); if (p) return p; const x = annonces.find((y) => y.id === id); return x ? deAnnonce(x) : undefined; };
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
   const ICO = window.DMS_ICONES_PIECES || {};
-  const icoSrc = (n) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='24' fill='#0E0F0D'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#5BE52B' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
+  const icoSrc = (n) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect width='96' height='96' rx='24' fill='#F4F4F5'/><circle cx='64' cy='34' r='12' fill='#5BE52B'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#18181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
   const img = (p, cls) => p.icone && !p.photoReelle ? `<img src="${icoSrc(p.icone)}" alt="${esc(p.nom)}" class="sq icone-piece ${cls || ''}">` : `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" loading="lazy">`;
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };

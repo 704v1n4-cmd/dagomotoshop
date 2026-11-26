@@ -1,4 +1,4 @@
-/* Icônes des pièces (dessinées pour Dagomotoshop) : trait sur une grille de 48, affichées vert sur noir. Clé = nom de la pièce dans piecesListe. */
+/* Icônes des pièces (dessinées pour Dagomotoshop) : trait sur une grille de 48, affichées en trait noir avec une pastille verte. Clé = nom de la pièce dans piecesListe. */
 window.DMS_ICONES_PIECES = {
 "Culasse": "<rect x='9' y='24' width='30' height='14' rx='2'/><path d='M12 24V12M18 24V9M24 24V8M30 24V9M36 24V12'/><circle cx='24' cy='31' r='3'/>",
 "Cylindre / piston": "<rect x='12' y='8' width='24' height='18' rx='2'/><path d='M12 13h24M12 17h24'/><circle cx='24' cy='21' r='2.5'/><path d='M21 26l-3 13h12l-3-13'/><circle cx='24' cy='39' r='3'/>",
