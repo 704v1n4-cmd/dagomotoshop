@@ -415,7 +415,7 @@
   const AVS = window.DMS_AVATARS || [];
   const avSrc = (i) => 'data:image/svg+xml,' + encodeURIComponent((AVS[i] || {}).svg || '');
   // Avatar « Casque à cornes » : réservé à l'équipe Dagomotoshop (patron et vendeurs)
-  const AV_EQ = [{ id: 'equipe-3d', nom: 'Casque à cornes 3D', src: 'img/avatar-equipe-3d.svg?v=1' }, { id: 'equipe', nom: 'Casque à cornes logo', src: 'img/avatar-equipe.webp?v=1' }];
+  const AV_EQ = [{ id: 'equipe-3d', nom: 'Casque à cornes 3D', src: 'img/avatar-equipe-3d.svg?v=2' }, { id: 'equipe', nom: 'Casque à cornes logo', src: 'img/avatar-equipe.webp?v=1' }];
   const avEq = (id) => AV_EQ.find((x) => x.id === id);
   const estEquipe = () => !!(admin && admin.role);
   const avatarHtml = (taille, idx) => {

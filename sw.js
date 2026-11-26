@@ -1,7 +1,7 @@
 /* Service worker : garde l'app disponible hors connexion.
    Change VERSION à chaque mise en ligne pour que les téléphones prennent la nouvelle version. */
-const VERSION = 'dms-v56';
-const FICHIERS = ['./', 'index.html', 'styles.css?v=46', 'app.js?v=50', 'donnees.js?v=44', 'icones.js?v=28', 'icones-pieces.js?v=2', 'avatars.js?v=1', 'manifest.webmanifest?v=22', 'img/icone-192.png', 'img/icone-512.png', 'secours.js?v=20', 'polices/manrope-latin-wght-normal.woff2', 'img/logo.jpg', 'img/motif-pieces.svg', 'img/motif-pieces-sombre.svg'];
+const VERSION = 'dms-v57';
+const FICHIERS = ['./', 'index.html', 'styles.css?v=46', 'app.js?v=51', 'donnees.js?v=44', 'icones.js?v=28', 'icones-pieces.js?v=2', 'avatars.js?v=1', 'manifest.webmanifest?v=22', 'img/icone-192.png', 'img/icone-512.png', 'secours.js?v=20', 'polices/manrope-latin-wght-normal.woff2', 'img/logo.jpg', 'img/motif-pieces.svg', 'img/motif-pieces-sombre.svg'];
 /* Les photos vont dans un cache à part, gardé d'une version à l'autre : chaque photo n'est téléchargée qu'une fois.
    Une photo modifiée change d'adresse (?v=…), elle est donc retéléchargée automatiquement. */
 const IMAGES = 'dms-images-1';
