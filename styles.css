@@ -364,3 +364,7 @@ img.icone-piece{filter:none!important;object-fit:contain;border-radius:24%}
 .av-choix{padding:3px;border:2px solid transparent;border-radius:50%;background:none;aspect-ratio:1}
 .av-choix img{width:100%;height:100%;display:block;border-radius:50%}
 .av-choix[aria-pressed=true]{border-color:#5BE52B;box-shadow:0 0 0 2px var(--bg)}
+
+.av-equipe{display:flex;align-items:center;gap:12px;padding:10px;border-radius:16px;background:#0E0F0D;color:#fff;border:1px solid #5BE52B}
+.av-equipe .av-choix{width:60px;height:60px;flex-shrink:0}
+.av-equipe .petit{color:#C9CCC4}

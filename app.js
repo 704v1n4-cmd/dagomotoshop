@@ -414,7 +414,14 @@
   /* Avatars : le client en choisit un parmi 20 ; sinon l'icône par défaut. */
   const AVS = window.DMS_AVATARS || [];
   const avSrc = (i) => 'data:image/svg+xml,' + encodeURIComponent((AVS[i] || {}).svg || '');
-  const avatarHtml = (taille, idx) => idx != null && AVS[idx] ? `<img src="${avSrc(idx)}" alt="${esc(AVS[idx].nom)}" width="${taille}" height="${taille}" style="width:${taille}px;height:${taille}px;border-radius:50%;flex-shrink:0;display:block">` : '';
+  // Avatar « Casque à cornes » : réservé à l'équipe Dagomotoshop (patron et vendeurs)
+  const AV_EQUIPE = { id: 'equipe', nom: 'Équipe Dagomotoshop', src: 'img/avatar-equipe.webp?v=1' };
+  const estEquipe = () => !!(admin && admin.role);
+  const avatarHtml = (taille, idx) => {
+    const st = `width="${taille}" height="${taille}" style="width:${taille}px;height:${taille}px;border-radius:50%;flex-shrink:0;display:block"`;
+    if (idx === AV_EQUIPE.id) return estEquipe() ? `<img src="${AV_EQUIPE.src}" alt="${AV_EQUIPE.nom}" ${st.replace('display:block','display:block;box-shadow:0 0 0 2px #5BE52B')}>` : '';
+    return idx != null && AVS[idx] ? `<img src="${avSrc(idx)}" alt="${esc(AVS[idx].nom)}" ${st}>` : '';
+  };
   V.compte = () => {
     if (!client) { return `<div class="ecran"><h1 class="titre">Mon compte</h1>
       <div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('user', 28)}</span><b style="font-size:18px">Connectez-vous</b>
@@ -832,9 +839,10 @@
     mode(m) { ui.mode = m; rafraichir(); },
     'avatar-ouvrir'() {
       ouvrirFeuille('avatar', `<div class="col" style="gap:12px"><b style="font-size:17px">Choisissez votre avatar</b><span class="petit" style="font-size:13px">Il s’affiche sur votre compte et, si vous vendez des pièces, à côté de vos notes.</span>
+        ${estEquipe() ? `<div class="av-equipe"><button class="av-choix" aria-pressed="${client && client.avatar === AV_EQUIPE.id}" data-a="avatar-choisir" data-id="${AV_EQUIPE.id}" aria-label="${AV_EQUIPE.nom}"><img src="${AV_EQUIPE.src}" alt=""></button><span class="col" style="gap:2px"><b>Casque Dagomotoshop</b><span class="petit">Réservé à l’équipe du magasin</span></span></div>` : ''}
         <div class="grille-av">${AVS.map((x, i) => `<button class="av-choix" aria-pressed="${client && client.avatar === i}" data-a="avatar-choisir" data-id="${i}" aria-label="${esc(x.nom)}"><img src="${avSrc(i)}" alt="" loading="lazy"></button>`).join('')}</div></div>`, 'Choisir mon avatar');
     },
-    'avatar-choisir'(i) { if (!client) return; client.avatar = +i; store.set('client', client); fermerFeuille(); rafraichir(); toast('Avatar enregistré'); },
+    'avatar-choisir'(i) { if (!client) return; if (i === AV_EQUIPE.id && !estEquipe()) return; client.avatar = i === AV_EQUIPE.id ? i : +i; store.set('client', client); fermerFeuille(); rafraichir(); toast('Avatar enregistré'); },
     fam(f) { ui.fam = f || ''; rafraichir(); },
     marque(m) { ui.marque = m || ''; rafraichir(); },
     'choisir-moto-ouvrir'() {
