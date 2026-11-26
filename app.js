@@ -411,6 +411,10 @@
     ${s < 3 ? `<button class="btn clair" data-a="demo-statut" data-id="${esc(c.code)}">Démo : passer à l'étape suivante</button>` : ''}</div>`;
   };
 
+  /* Avatars : le client en choisit un parmi 20 ; sinon l'icône par défaut. */
+  const AVS = window.DMS_AVATARS || [];
+  const avSrc = (i) => 'data:image/svg+xml,' + encodeURIComponent((AVS[i] || {}).svg || '');
+  const avatarHtml = (taille, idx) => idx != null && AVS[idx] ? `<img src="${avSrc(idx)}" alt="${esc(AVS[idx].nom)}" width="${taille}" height="${taille}" style="width:${taille}px;height:${taille}px;border-radius:50%;flex-shrink:0;display:block">` : '';
   V.compte = () => {
     if (!client) { return `<div class="ecran"><h1 class="titre">Mon compte</h1>
       <div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('user', 28)}</span><b style="font-size:18px">Connectez-vous</b>
@@ -419,7 +423,7 @@
     const n = commandes.length, f = n % 5;
     return `<div class="ecran"><h1 class="titre">Mon compte</h1>
     <div class="carte col" style="background:var(--noir);color:var(--noir-txt);border-radius:22px;gap:16px">
-      <div class="ligne"><span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>
+      <div class="ligne"><button class="avatar-btn" data-a="avatar-ouvrir" aria-label="Choisir mon avatar">${avatarHtml(52, client.avatar) || `<span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>`}<span class="avatar-crayon">${ic('plus', 12)}</span></button>
         <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--noir-mut)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${pl(n, 'commande')}</span></div></div>
       <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--noir-mut)"><b style="color:var(--lime)">${f}</b> achat${f > 1 ? 's' : ''} sur 5</span></div>
         <div role="progressbar" aria-label="Carte fidélité" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${f}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">${[0, 1, 2, 3, 4].map((k) => `<span style="height:8px;border-radius:4px;background:${k < f ? 'var(--lime)' : 'var(--noir-vide)'}"></span>`).join('')}</div>
@@ -499,7 +503,7 @@
     if (!client) { ui.retour = 'annonces'; location.hash = 'connexion'; return ''; }
     const l = annonces.filter((x) => x.proprio).slice().reverse();
     return `<div class="ecran">${entete('Mes annonces', 'compte', '<a href="#vendre" class="rond" aria-label="Vendre une pièce">' + ic('plus') + '</a>')}
-    ${statV('moi') ? (() => { const s = statV('moi'); return `<div class="carte ligne" style="gap:12px"><span class="avatar">${ic('user', 20)}</span><span class="col" style="flex:1;gap:2px"><b style="font-weight:600">${esc(s.alias)}</b><span class="petit">Votre pseudonyme public · ${pl(s.ventes, 'vente')}</span></span>${s.n ? `<span class="ligne" style="gap:4px">${etoiles(s.moy, 14)}<b>${note1(s.moy)}</b></span>` : '<span class="petit">Pas encore noté</span>'}</div>`; })() : ''}
+    ${statV('moi') ? (() => { const s = statV('moi'); return `<div class="carte ligne" style="gap:12px">${avatarHtml(44, client && client.avatar) || `<span class="avatar">${ic('user', 20)}</span>`}<span class="col" style="flex:1;gap:2px"><b style="font-weight:600">${esc(s.alias)}</b><span class="petit">Votre pseudonyme public · ${pl(s.ventes, 'vente')}</span></span>${s.n ? `<span class="ligne" style="gap:4px">${etoiles(s.moy, 14)}<b>${note1(s.moy)}</b></span>` : '<span class="petit">Pas encore noté</span>'}</div>`; })() : ''}
     ${l.length ? l.map((x) => `<div class="carte col" style="gap:10px"><div class="ligne" style="gap:12px;align-items:flex-start"><span class="vign">${img(deAnnonce(x))}</span>
       <div class="col" style="flex:1;gap:2px"><b style="font-size:15px;font-weight:600">${esc(x.titre)}</b><span class="petit">${esc(x.compat)} · ${esc(x.etatPiece)}</span>
       <span class="petit">Prix ${ar(x.prix)} · vous recevrez <b style="color:var(--ink)">${ar(netVendeur(x.prix))}</b></span><span style="margin-top:4px">${badgeStatut(x)}</span></div></div>
@@ -826,6 +830,11 @@
     'retirer-annonce'(id) { const x = annonces.find((y) => y.id === id); if (x && (x.etat === 'attente' || x.etat === 'en_ligne')) { x.etat = 'retiree'; sauver(); toast('Annonce retirée'); rafraichir(); } },
     genre(g) { ui.genre = g || ''; rafraichir(); },
     mode(m) { ui.mode = m; rafraichir(); },
+    'avatar-ouvrir'() {
+      ouvrirFeuille('avatar', `<div class="col" style="gap:12px"><b style="font-size:17px">Choisissez votre avatar</b><span class="petit" style="font-size:13px">Il s’affiche sur votre compte et, si vous vendez des pièces, à côté de vos notes.</span>
+        <div class="grille-av">${AVS.map((x, i) => `<button class="av-choix" aria-pressed="${client && client.avatar === i}" data-a="avatar-choisir" data-id="${i}" aria-label="${esc(x.nom)}"><img src="${avSrc(i)}" alt="" loading="lazy"></button>`).join('')}</div></div>`, 'Choisir mon avatar');
+    },
+    'avatar-choisir'(i) { if (!client) return; client.avatar = +i; store.set('client', client); fermerFeuille(); rafraichir(); toast('Avatar enregistré'); },
     fam(f) { ui.fam = f || ''; rafraichir(); },
     marque(m) { ui.marque = m || ''; rafraichir(); },
     'choisir-moto-ouvrir'() {
