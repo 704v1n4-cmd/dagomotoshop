@@ -164,7 +164,7 @@
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
       <img class="moto" src="img/cygnus-3.webp" alt="">
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Scooters et motos de 100 à 1200\u00a0cc, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <div class="txt"><b>Votre moto,<br><span>au juste prix.</span></b><span class="sous">Scooters et motos d’occasion, pièces et casques à Tana.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
