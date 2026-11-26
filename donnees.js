@@ -189,29 +189,29 @@ window.DMS_DONNEES = {
       versions: [['125 cc', ''], ['150 cc', ''], ['150 ABS', 'Freinage ABS']],
       specs: [['125–150', 'cc'], ['3', 'Versions'], ['Taïwan', 'Origine'], ['Révisé', 'Au garage']],
       description: "PGO Tigra sportif, importé de Taïwan et révisé au garage, disponible selon arrivage en 125 cc, 150 cc ou 150 ABS." },
-    { id: 'kit-freinage', cat: 'pieces', nom: 'Kit freinage', detail: 'Plaquettes + disque', stock: 12, prix: 45000, ancienPrix: 53000,
+    { id: 'kit-freinage', famille: 'Freinage', modeles: [], cat: 'pieces', nom: 'Kit freinage', detail: 'Plaquettes + disque', stock: 12, prix: 45000, ancienPrix: 53000,
       icone: 'Disque de frein', badge: '-15 %',
       description: "Plaquettes et disque avant, compatibles avec la plupart des 125 cc. Pose possible au garage." },
-    { id: 'courroie', cat: 'pieces', nom: 'Courroie', detail: 'Transmission 125 cc', stock: 6, prix: 38000, icone: 'Courroie',
+    { id: 'courroie', famille: 'Transmission', modeles: [], cat: 'pieces', nom: 'Courroie', detail: 'Transmission 125 cc', stock: 6, prix: 38000, icone: 'Courroie',
       description: "Courroie de transmission renforcée. À changer environ tous les 15 000 km." },
-    { id: 'filtre-air', cat: 'pieces', nom: 'Filtre à air', detail: 'Toutes cylindrées', stock: 2, prix: 15000, icone: 'Filtre à air',
+    { id: 'filtre-air', famille: 'Alimentation et admission', modeles: [], cat: 'pieces', nom: 'Filtre à air', detail: 'Toutes cylindrées', stock: 2, prix: 15000, icone: 'Filtre à air',
       description: "Filtre à air lavable. Conseillé à chaque vidange en saison sèche." },
-    { id: 'bougie', cat: 'pieces', nom: 'Bougie', detail: 'Allumage 50–150 cc', stock: 30, prix: 8000, icone: 'Bougie',
+    { id: 'bougie', famille: 'Électricité et allumage', modeles: [], cat: 'pieces', nom: 'Bougie', detail: 'Allumage 50–150 cc', stock: 30, prix: 8000, icone: 'Bougie',
       description: "Bougie d'allumage standard pour scooters 4 temps." },
     /* Huiles moteur. « Vrac » = vendue au litre, servie depuis le bidon de 10 L (unite: 'L'). */
-    { id: 'mannol-15w50-vrac', cat: 'pieces', nom: 'Huile Mannol 4-Takt 15W-50 · vrac', detail: 'Au litre · Powerbike', etat: 'Neuf', stock: null, prix: null, unite: 'L', img: 'img/mannol-15w50-vrac.webp?v=2',
+    { id: 'mannol-15w50-vrac', famille: 'Huiles', modeles: ['universel'], cat: 'pieces', nom: 'Huile Mannol 4-Takt 15W-50 · vrac', detail: 'Au litre · Powerbike', etat: 'Neuf', stock: null, prix: null, unite: 'L', img: 'img/mannol-15w50-vrac.webp?v=2',
       compat: 'Moteurs 4 temps : motos et scooters',
       specs: [['15W-50', 'Viscosité'], ['4 temps', 'Moteur'], ['Au litre', 'Vente'], ['Mannol', 'Marque']],
       description: "Huile moteur Mannol 4-Takt Powerbike 15W-50 (réf. 7832) pour motos et scooters 4 temps. Vendue au litre, servie depuis le bidon de 10 L : apportez votre bouteille ou demandez-en une au magasin." },
-    { id: 'mannol-20w50-vrac', cat: 'pieces', nom: 'Huile Mannol 4-Takt 20W-50 · vrac', detail: 'Au litre · Motorbike HD', etat: 'Neuf', stock: null, prix: null, unite: 'L', img: 'img/mannol-20w50-vrac.webp?v=2',
+    { id: 'mannol-20w50-vrac', famille: 'Huiles', modeles: ['universel'], cat: 'pieces', nom: 'Huile Mannol 4-Takt 20W-50 · vrac', detail: 'Au litre · Motorbike HD', etat: 'Neuf', stock: null, prix: null, unite: 'L', img: 'img/mannol-20w50-vrac.webp?v=2',
       compat: 'Moteurs 4 temps : motos et scooters',
       specs: [['20W-50', 'Viscosité'], ['JASO MA/MA2', 'Norme'], ['Au litre', 'Vente'], ['Mannol', 'Marque']],
       description: "Huile moteur Mannol 7830 Motorbike 4-Takt HD 20W-50, API SL, JASO MA/MA2, pour motos et scooters 4 temps. Vendue au litre, servie depuis le bidon de 10 L." },
-    { id: 'mannol-15w50-1l', cat: 'pieces', nom: 'Huile Mannol 4-Takt 15W-50 · 1 L', detail: 'Bidon 1 L · Power Plus', etat: 'Neuf', stock: null, prix: null, img: 'img/mannol-15w50-1l.webp?v=2',
+    { id: 'mannol-15w50-1l', famille: 'Huiles', modeles: ['universel'], cat: 'pieces', nom: 'Huile Mannol 4-Takt 15W-50 · 1 L', detail: 'Bidon 1 L · Power Plus', etat: 'Neuf', stock: null, prix: null, img: 'img/mannol-15w50-1l.webp?v=2',
       compat: 'Moteurs 4 temps : motos et scooters',
       specs: [['15W-50', 'Viscosité'], ['JASO MA/MA2', 'Norme'], ['Semi-synthèse', 'Type'], ['1 L', 'Bidon']],
       description: "Huile moteur Mannol 7860 4-Takt Power Plus 15W-50, semi-synthétique à base d'esters, JASO MA/MA2, pour motos et scooters 4 temps. Bidon scellé de 1 L." },
-    { id: 'mannol-20w50-1l', cat: 'pieces', nom: 'Huile Mannol 4-Takt 20W-50 · 1 L', detail: 'Bidon 1 L · Motorbike HD', etat: 'Neuf', stock: null, prix: null, img: 'img/mannol-20w50-1l.webp?v=2',
+    { id: 'mannol-20w50-1l', famille: 'Huiles', modeles: ['universel'], cat: 'pieces', nom: 'Huile Mannol 4-Takt 20W-50 · 1 L', detail: 'Bidon 1 L · Motorbike HD', etat: 'Neuf', stock: null, prix: null, img: 'img/mannol-20w50-1l.webp?v=2',
       compat: 'Moteurs 4 temps : motos et scooters',
       specs: [['20W-50', 'Viscosité'], ['API SN', 'Norme'], ['JASO MA/MA2', 'Embrayage'], ['1 L', 'Bidon']],
       description: "Huile moteur Mannol 7830 4-Takt HD Motorbike 20W-50, API SN, JASO MA/MA2, pour motos et scooters 4 temps. Bidon scellé de 1 L." },
@@ -225,3 +225,16 @@ window.DMS_DONNEES = {
       description: "Casque fermé qui protège aussi le menton, pour les longs trajets." }
   ]
 };
+
+/* Une fiche par pièce de la liste (prix et stock à remplir dans l'espace boutique).
+   La pièce est illustrée par son icône ; « modeles » = ids des véhicules compatibles, ou 'universel'. */
+(function () {
+  const D = window.DMS_DONNEES;
+  const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const deja = new Set(D.produits.map((p) => p.nom.toLowerCase()));
+  Object.entries(D.piecesListe).forEach(([famille, liste]) => liste.forEach((nom) => {
+    if (deja.has(nom.toLowerCase())) return;
+    D.produits.push({ id: 'p-' + slug(nom), cat: famille.startsWith('Équipement') ? 'accessoires' : 'pieces', famille, nom, detail: famille, etat: 'Neuf',
+      stock: null, prix: null, icone: nom, modeles: [], description: nom + '. Demandez-nous la référence exacte pour votre modèle : nous vérifions la compatibilité avant la vente.' });
+  }));
+})();

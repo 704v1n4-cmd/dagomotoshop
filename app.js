@@ -44,9 +44,19 @@
     });
   }
   appliquerCatalogue();
+  /* Modèles de motos et scooters (tirés du rayon Véhicules) pour la compatibilité des pièces. */
+  const MODELES = BASE.filter((p) => p.cat === 'scooters').map((p) => ({ id: p.id, marque: p.nom.split(' ')[0], nom: p.nom }));
+  const MARQUES = [...new Set(MODELES.map((m) => m.marque))];
+  const modele = (id) => MODELES.find((m) => m.id === id);
+  const modelesDe = (p) => Array.isArray(p.modeles) ? p.modeles : [];
+  /* Une pièce s'affiche pour un modèle si elle est universelle, compatible, ou pas encore renseignée (à confirmer au magasin). */
+  const pourModele = (p, id) => { const m = modelesDe(p); return !m.length || m.includes('universel') || m.includes(id); };
+  const compatSure = (p, id) => { const m = modelesDe(p); return m.includes('universel') || m.includes(id); };
+  const pourMarque = (p, mq) => { const m = modelesDe(p); return !m.length || m.includes('universel') || m.some((x) => (modele(x) || {}).marque === mq); };
+  const AVEC_MODES = (c) => c === 'pieces';
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', notes: {}, groupe: '', genre: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+    paiement: 'mvola', notes: {}, groupe: '', genre: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, mode: 'moto', moto: store.get('maMoto', ''), fam: '', marque: '', taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); store.set('catalogue', catalogue); store.set('alertes', alertes); store.set('admin', admin); };
   /* Modifie un article (produit de base : on garde seulement les champs changés ; article ajouté : on le met à jour). */
   const majProduit = (id, champs) => {
@@ -80,7 +90,8 @@
   const nbPanier = () => Object.values(panier).reduce((s, q) => s + q, 0);
   const ICO = window.DMS_ICONES_PIECES || {};
   const icoSrc = (n) => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect x='1' y='1' width='94' height='94' rx='23' fill='#FFFFFF' stroke='#E4E4E7' stroke-width='2'/><circle cx='64' cy='34' r='12' fill='#5BE52B'/><g transform='translate(18 18) scale(1.25)' fill='none' stroke='#18181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${ICO[n] || ICO.Autres}</g></svg>`);
-  const img = (p, cls) => p.icone && !p.photoReelle ? `<img src="${icoSrc(p.icone)}" alt="${esc(p.nom)}" class="sq icone-piece ${cls || ''}">` : `<img src="${p.img}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" loading="lazy">`;
+  const img = (p, cls) => p.icone && !p.photoReelle ? `<img src="${icoSrc(p.icone)}" alt="${esc(p.nom)}" class="sq icone-piece ${cls || ''}">` : (() => { const grand = /hero-img/.test(cls || ''); const src = !grand && /^img\/[^/]+\.webp/.test(p.img || '') ? p.img.replace(/^img\//, 'img/mini/') : p.img;
+    return `<img src="${src}" alt="${esc(p.nom)}" class="sq ${cls || ''}${p.rond ? ' rondimg' : ''}${p.photoReelle ? ' photo-reelle' : ''}" ${grand ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`; })();
   /* Panier : la clé est l'id du produit, suivie de @taille quand il y en a une (ex. casque-jet@L). */
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
@@ -92,7 +103,7 @@
   const stockCls = (p) => p.stock <= 0 ? ' rupture' : p.stock <= 2 ? '' : ' ok';
   const enRupture = (p) => !p.particulier && p.stock != null && p.stock <= 0;
   /* Sous chaque produit : état (Neuf / Occasion) et stock exact. */
-  const ligneStock = (p) => p.particulier ? '' : `<span class="ligne-stock">${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : ''}<span class="petit etat-txt">${esc(p.etat || '')}</span></span>`;
+  const ligneStock = (p) => p.particulier ? '' : `<span class="ligne-stock">${ui.moto && ui.mode === 'moto' && AVEC_MODES(p.cat) && compatSure(p, ui.moto) ? `<span class="stock ok">${ic('check', 12)}Compatible</span>` : ''}${p.stock != null ? `<span class="stock${stockCls(p)}">${stockTxt(p)}</span>` : ''}<span class="petit etat-txt">${esc(p.etat || '')}</span></span>`;
   const I = window.DMS_ICONES || {};
   const ic = (n, s = 20, extra = '') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${/fill=/.test(extra) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra.replace(/fill="[^"]*"/, '')}>${I[n] || ''}</svg>`;
   const rondPanier = () => `<a href="#panier" class="rond" aria-label="Panier, ${pl(nbPanier(), 'article')}">${ic('panier')}${nbPanier() ? `<span class="pastille">${nbPanier()}</span>` : ''}</a>`;
@@ -167,13 +178,39 @@
     const rang = (p) => { const s = p.particulier && statV(p.vendeurId); return s ? (s.top ? 2 : 0) + s.moy / 10 : 0; };
     if (!q && ui.cat === 'scooters' && ui.genre) l = l.filter((p) => (p.genre || 'scooter') === ui.genre);
     if (!q && ui.cat === 'occasion' && ui.groupe) l = l.filter((p) => p.groupe === ui.groupe);
-    l = l.slice().sort((a, b) => { if (enRupture(a) !== enRupture(b)) return enRupture(a) ? 1 : -1; if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
+    if (!q && AVEC_MODES(ui.cat)) {
+      if (ui.mode === 'moto' && ui.moto) l = l.filter((p) => pourModele(p, ui.moto));
+      if (ui.mode === 'famille' && ui.fam) l = l.filter((p) => p.famille === ui.fam);
+      if (ui.mode === 'marque' && ui.marque) l = l.filter((p) => pourMarque(p, ui.marque));
+    }
+    l = l.slice().sort((a, b) => { if (enRupture(a) !== enRupture(b)) return enRupture(a) ? 1 : -1;
+      if (!q && ui.mode === 'moto' && ui.moto && AVEC_MODES(ui.cat)) { const s = compatSure(b, ui.moto) - compatSure(a, ui.moto); if (s) return s; }
+      if (!a.prix !== !b.prix) return a.prix ? -1 : 1; if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
   };
   const grilleHtml = () => {
     const { l, q } = listeCatalogue();
     return `<p class="petit" style="margin:0;font-size:13px"><b style="color:var(--ink)">${l.length}</b> résultat${l.length > 1 ? 's' : ''}${q ? ` pour « ${esc(ui.recherche)} »` : ''}</p>
       ${l.length ? `<div class="grille">${l.map(carteProd).join('')}</div>` : `<div class="carte col vide"><b>Aucun produit trouvé</b><span class="petit">Essayez un autre mot ou retirez un filtre. Nous commandons aussi sur demande.</span>${nbFiltres() ? '<button class="btn clair" data-a="filtres-raz" style="height:46px;margin-top:6px">Retirer les filtres</button>' : ''}</div>`}`;
+  };
+  /* Fiche : avec quels modèles la pièce va. */
+  const blocCompat = (p) => {
+    if (p.particulier || (p.cat !== 'pieces' && p.cat !== 'accessoires') || /^casque/.test(p.id)) return '';
+    const m = modelesDe(p);
+    const corps = m.includes('universel') ? '<span class="petit" style="font-size:13px">Toutes les motos et tous les scooters 4 temps.</span>'
+      : m.length ? `<div class="ligne" style="gap:6px;flex-wrap:wrap">${m.map((id) => modele(id)).filter(Boolean).map((x) => `<span class="badge part${x.id === ui.moto ? ' sel' : ''}">${x.id === ui.moto ? ic('check', 12) : ''}${esc(x.nom)}</span>`).join('')}</div>`
+      : `<span class="petit" style="font-size:13px">À confirmer au magasin : envoyez-nous le modèle et l'année de votre moto, nous vérifions la référence avant la vente.</span><a class="btn clair" style="height:44px" target="_blank" rel="noopener" href="https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, je cherche : ' + p.nom + (ui.moto ? ' pour ' + modele(ui.moto).nom : '') + '. Est-ce disponible ?')}">${ic('bulle', 18)}Demander pour ma moto</a>`;
+    const ok = ui.moto && compatSure(p, ui.moto), non = ui.moto && m.length && !pourModele(p, ui.moto);
+    return `<div class="carte col" style="gap:8px"><h2 class="h2" style="font-size:15px">Compatibilité</h2>${ok ? `<span class="stock ok" style="align-self:flex-start">${ic('check', 12)}Va sur votre ${esc(modele(ui.moto).nom)}</span>` : non ? `<span class="stock rupture" style="align-self:flex-start">Ne va pas sur votre ${esc(modele(ui.moto).nom)}</span>` : ''}${corps}</div>`;
+  };
+  const barreModes = () => {
+    const m = modele(ui.moto);
+    const familles = [...new Set(D.produits.filter((p) => p.cat === ui.cat && p.famille).map((p) => p.famille))];
+    const puces = (cle, liste, action) => `<div class="defile" style="gap:6px">${[['', 'Toutes'], ...liste.map((x) => [x, x])].map(([v, l]) => `<button class="puce" style="height:36px" aria-pressed="${ui[cle] === v}" data-a="${action}" data-id="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+    return `<div class="seg modes" role="tablist" aria-label="Trouver une pièce">${[['moto', 'Ma moto'], ['famille', 'Familles'], ['marque', 'Marques'], ['tout', 'Tout']].map(([v, l]) => `<button role="tab" aria-selected="${ui.mode === v}" aria-pressed="${ui.mode === v}" data-a="mode" data-id="${v}">${l}</button>`).join('')}</div>
+    ${ui.mode === 'moto' ? (m ? `<div class="carte ligne entre ma-moto"><span class="ligne" style="gap:10px;min-width:0"><span class="vign" style="width:52px;height:46px">${img(BASE.find((p) => p.id === m.id))}</span><span class="col" style="min-width:0"><span class="petit">Ma moto</span><b class="coupe">${esc(m.nom)}</b></span></span><button class="btn clair" style="width:auto;height:40px;padding:0 14px;font-size:14px" data-a="choisir-moto-ouvrir">Changer</button></div>`
+      : `<button class="carte ligne entre ma-moto" data-a="choisir-moto-ouvrir" style="width:100%;text-align:left"><span class="col"><b>Choisir ma moto</b><span class="petit">Pour voir les pièces qui vont dessus</span></span>${ic('fleche', 18)}</button>`)
+      : ui.mode === 'famille' ? puces('fam', familles, 'fam') : ui.mode === 'marque' ? puces('marque', MARQUES, 'marque') : ''}`;
   };
   V.catalogue = (cat) => {
     if (cat && D.categories.some((c) => c.id === cat)) ui.cat = cat;
@@ -183,6 +220,7 @@
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.court || c.nom}</button>`).join('')}</div>
     ${!ui.recherche && ui.cat === 'scooters' ? `<div class="ligne" style="gap:6px">${[['', 'Tous'], ['scooter', 'Scooters'], ['moto', 'Motos']].map(([g, l]) => `<button class="puce" style="height:38px" aria-pressed="${ui.genre === g}" data-a="genre" data-id="${g}">${l}</button>`).join('')}</div>` : ''}
+    ${!ui.recherche && AVEC_MODES(ui.cat) ? barreModes() : ''}
     <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
       ${meilleursHtml()}
@@ -230,6 +268,7 @@
         <div class="seg" role="radiogroup" aria-label="${choix.titre}" style="grid-template-columns:repeat(${Math.min(choix.liste.length, 4)},minmax(0,1fr))">${choix.liste.map(([t, cm]) => `<button role="radio" aria-checked="${ui.taille === t}" aria-pressed="${ui.taille === t}" data-a="taille" data-id="${esc(t)}"><b>${esc(t)}</b>${cm ? `<span class="petit" style="font-size:11px">${esc(cm)}</span>` : ''}</button>`).join('')}</div></div>` : ''}
       ${p.specs ? `<div class="specs">${p.specs.map(([v, l]) => `<div><b>${esc(v)}</b><span class="petit" style="font-size:11px">${esc(l)}</span></div>`).join('')}</div>` : ''}
       <div class="carte ligne entre petit" style="padding:12px 16px;font-size:13px;flex-wrap:wrap;gap:8px"><span class="ligne" style="gap:8px">${ic('pin', 18)}${p.particulier ? 'Retrait au magasin uniquement' : 'Retrait ' + esc(B.delaiRetrait)}</span><span class="ligne" style="gap:8px">${ic('horloge', 18)}${esc(B.horaires)}</span></div>
+      ${blocCompat(p)}
       <div class="carte col" style="gap:6px"><h2 class="h2" style="font-size:15px">Description</h2><p class="petit" style="margin:0;font-size:13px;line-height:1.5">${esc(p.description)}</p></div>
       ${similaires(p)}
       <div class="carte ligne" style="padding:12px 16px"><img src="img/logo.jpg" alt="" style="width:44px;height:44px;border-radius:10px">
@@ -564,7 +603,7 @@
 
   const ancienStocke = (id) => { const m = catalogue.modifs[id]; if (m && 'ancienPrix' in m) return m.ancienPrix; const o = BASE.concat(catalogue.ajouts).find((x) => x.id === id); return o ? o.ancienPrix : null; };
   const brouillon = (p) => ({ id: p ? p.id : '', nom: p ? p.nom : '', detail: p ? p.detail : '', cat: p ? p.cat : 'pieces', genre: p ? (p.genre || 'scooter') : 'scooter', etat: p ? p.etat : 'Neuf',
-    prix: p && p.prix ? String(p.prix) : '', stock: p && p.stock != null ? String(p.stock) : '', compat: p ? (p.compat || '') : '', description: p ? (p.description || '') : '',
+    prix: p && p.prix ? String(p.prix) : '', stock: p && p.stock != null ? String(p.stock) : '', compat: p ? (p.compat || '') : '', modeles: p ? modelesDe(p).slice() : [], famille: p ? (p.famille || '') : '', description: p ? (p.description || '') : '',
     photos: p ? (p.photos && p.photos.length ? p.photos.slice() : p.img ? [p.img] : []) : [], icone: p ? (p.icone || '') : '', offre: p ? !!p.offre : false, ancienPrix: p ? String(ancienStocke(p.id) || '') : '', finOffre: p ? (p.finOffre || '') : '', erreur: '' });
   V.article = (id) => {
     if (!admin) { location.hash = 'admin'; return ''; }
@@ -590,7 +629,9 @@
       <div class="col" style="gap:6px"><span class="lib">État</span>${seg('etat', [['Occasion', 'Occasion'], ['Neuf', 'Neuf']])}</div>
       ${veh ? '' : `<div class="col" style="gap:6px"><label class="lib" for="a-icone">Icône de la pièce <span class="petit">(à la place d’une photo)</span></label>
         <div class="ligne" style="gap:10px">${a.icone ? `<img src="${icoSrc(a.icone)}" alt="" width="48" height="48" style="border-radius:12px;flex-shrink:0">` : ''}<select id="a-icone" class="saisie" data-in="a-icone"${ro}><option value="">Aucune : utiliser les photos</option>${Object.entries(D.piecesListe).map(([f, l]) => `<optgroup label="${esc(f)}">${l.map((n) => `<option${a.icone === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}<option${a.icone === 'Autres' ? ' selected' : ''}>Autres</option></select></div></div>`}
-      ${veh ? '' : champ('a-compat', 'Modèles compatibles', `<input id="a-compat" class="saisie" data-in="a-compat" value="${esc(a.compat)}" placeholder="Ex. Cygnus 1 à 4, Kymco G6"${ro}>`)}
+      ${veh ? '' : `<div class="col" style="gap:6px"><span class="lib">Modèles compatibles <span class="petit">(${a.modeles.includes('universel') ? 'tous' : a.modeles.length || 'aucun : « à confirmer au magasin »'})</span></span>
+        <button type="button" class="puce" style="height:38px;align-self:flex-start" aria-pressed="${a.modeles.includes('universel')}" data-a="art-modele" data-id="universel"${ro}>Toutes motos et scooters</button>
+        ${a.modeles.includes('universel') ? '' : MARQUES.map((mq) => `<div class="col" style="gap:4px"><span class="petit" style="font-weight:600">${esc(mq)}</span><div class="ligne" style="gap:6px;flex-wrap:wrap">${MODELES.filter((m) => m.marque === mq).map((m) => `<button type="button" class="puce" style="height:36px" aria-pressed="${a.modeles.includes(m.id)}" data-a="art-modele" data-id="${m.id}"${ro}>${esc(m.nom.slice(mq.length + 1))}</button>`).join('')}</div></div>`).join('')}</div>`}
       ${champ('a-desc', 'Description', `<textarea id="a-desc" class="saisie" data-in="a-desc" rows="3" style="height:auto;padding:12px 14px"${ro}>${esc(a.description)}</textarea>`)}
       ${verrou}</div>
     <div class="carte col" style="gap:12px">
@@ -625,7 +666,7 @@
     if (avant && avant.stock != null && avant.stock <= 0 && stock > 0 && (alertes[ui.artId] || []).length) toast('Pensez à prévenir les clients qui attendent');
     if (!P) { majProduit(ui.artId, { stock }); sauver(); ui.artId = ''; toast('Stock enregistré'); aller('admin'); return; }
     const photos = a.photos.filter(Boolean);
-    const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(),
+    const champs = { nom: a.nom.trim(), detail: a.detail.trim(), cat: a.cat, etat: a.etat, occasion: a.etat === 'Occasion', prix: prix || null, stock, compat: a.compat.trim(), modeles: a.cat === 'scooters' ? [] : a.modeles.slice(), famille: a.cat === 'scooters' ? '' : (a.famille || (Object.entries(D.piecesListe).find(([, l]) => l.includes(a.icone)) || [''])[0]),
       description: a.description.trim() || a.nom.trim(), img: photos[0] || '', icone: a.cat !== 'scooters' ? a.icone : '', photos, rond: false, photoReelle: /^data:/.test(photos[0]), offre: a.offre, ancienPrix: a.offre && ancien ? ancien : null, finOffre: a.offre ? a.finOffre : '' };
     if (a.cat === 'scooters') champs.genre = a.genre; else champs.genre = undefined;
     if (nouveau) { catalogue.ajouts.push(Object.assign({ id: 'art-' + Date.now().toString(36) }, champs)); appliquerCatalogue(); }
@@ -759,6 +800,15 @@
     'remettre-en-vente'(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'en_ligne'; delete x.commande; sauver(); toast('Pièce remise en vente'); rafraichir(); } },
     'retirer-annonce'(id) { const x = annonces.find((y) => y.id === id); if (x && (x.etat === 'attente' || x.etat === 'en_ligne')) { x.etat = 'retiree'; sauver(); toast('Annonce retirée'); rafraichir(); } },
     genre(g) { ui.genre = g || ''; rafraichir(); },
+    mode(m) { ui.mode = m; rafraichir(); },
+    fam(f) { ui.fam = f || ''; rafraichir(); },
+    marque(m) { ui.marque = m || ''; rafraichir(); },
+    'choisir-moto-ouvrir'() {
+      ouvrirFeuille('moto', `<div class="col" style="gap:10px"><b style="font-size:17px">Quelle est votre moto ?</b><span class="petit" style="font-size:13px">On vous montre les pièces qui vont dessus. Vous pourrez changer à tout moment.</span>
+        ${MARQUES.map((mq) => `<div class="col" style="gap:6px"><span class="lib">${esc(mq)}</span><div class="ligne" style="gap:6px;flex-wrap:wrap">${MODELES.filter((m) => m.marque === mq).map((m) => `<button class="puce" style="height:40px" aria-pressed="${ui.moto === m.id}" data-a="choisir-moto" data-id="${m.id}">${esc(m.nom.slice(mq.length + 1))}</button>`).join('')}</div></div>`).join('')}
+        ${ui.moto ? '<button class="btn clair" data-a="choisir-moto" data-id="">Ne plus filtrer par moto</button>' : ''}</div>`, 'Choisir ma moto');
+    },
+    'choisir-moto'(id) { ui.moto = id; ui.mode = 'moto'; store.set('maMoto', id); fermerFeuille(); rafraichir(); if (id) toast('Pièces pour ' + modele(id).nom); },
     groupe(n) { ui.groupe = n || ''; rafraichir(); },
     'note-etoile'(v) { const [cle, n] = v.split('|'); ui.notes[cle] = Object.assign(ui.notes[cle] || { tags: [] }, { n: +n }); rafraichir(); },
     'note-tag'(v) { const [cle, t] = v.split('|'); const o = ui.notes[cle] = ui.notes[cle] || { tags: [] }; o.tags = o.tags.includes(t) ? o.tags.filter((x) => x !== t) : o.tags.concat(t); rafraichir(); },
@@ -782,6 +832,7 @@
     },
     'art-choix'(v) { if (!estPatron()) return; const [k, val] = v.split('|'); ui.art[k] = val; if (k === 'cat' && val === 'scooters' && !ui.art.etat) ui.art.etat = 'Occasion'; ui.art.erreur = ''; rafraichir(); },
     'art-stock'(d) { const n = Math.max(0, (parseInt(ui.art.stock, 10) || 0) + +d); ui.art.stock = String(n); rafraichir(); },
+    'art-modele'(id) { if (!estPatron()) return; const m = ui.art.modeles; if (id === 'universel') ui.art.modeles = m.includes('universel') ? [] : ['universel']; else ui.art.modeles = m.includes(id) ? m.filter((x) => x !== id) : m.filter((x) => x !== 'universel').concat(id); rafraichir(); },
     'art-rupture'() { ui.art.stock = '0'; rafraichir(); },
     'art-offre'() { if (!ui.art.offre && nbOffres(ui.artId) >= MAX_OFFRES) { toast(`Déjà ${MAX_OFFRES} offres : retirez-en une d’abord`); return; } ui.art.offre = !ui.art.offre; rafraichir(); },
     'art-photo-suppr'(k) { ui.art.photos.splice(+k, 1); rafraichir(); },
