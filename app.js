@@ -111,7 +111,7 @@
   };
 
   const carteProd = (p) => `<div class="prod">
-    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : p.occasion ? '<span class="badge part">Occasion</span>' : ''}
+    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span>${p.particulier ? ligneVendeur(p.vendeurId, true) : ''}</a>
     <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixCourt(p)}</span>
     ${!p.prix || p.particulier ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
@@ -148,6 +148,7 @@
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
       ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.court || c.nom}</button>`).join('')}</div>
+    ${!ui.recherche && ui.cat === 'scooters' ? `<p class="petit ligne" style="margin:0;gap:6px">${ic('info', 16)}Tous nos scooters et motos sont d’occasion.</p>` : ''}
     ${!ui.recherche && ui.cat === 'scooters' ? `<div class="ligne" style="gap:6px">${[['', 'Tous'], ['scooter', 'Scooters'], ['moto', 'Motos']].map(([g, l]) => `<button class="puce" style="height:38px" aria-pressed="${ui.genre === g}" data-a="genre" data-id="${g}">${l}</button>`).join('')}</div>` : ''}
     <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
