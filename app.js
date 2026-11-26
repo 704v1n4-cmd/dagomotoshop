@@ -25,7 +25,7 @@
   let vendeurs = Object.assign(JSON.parse(JSON.stringify(D.vendeursDemo)), store.get('vendeurs', {}));
   const memoRecherche = (t) => { t = t.trim(); if (t.length < 2) return; recentes = [t].concat(recentes.filter((r) => r.toLowerCase() !== t.toLowerCase())).slice(0, 5); store.set('recentes', recentes); };
   const ui = { cat: 'scooters', recherche: '', tri: 'asc', mode: 'boutique', promoSaisie: '', promo: null, promoMsg: '',
-    paiement: 'mvola', notes: {}, groupe: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
+    paiement: 'mvola', notes: {}, groupe: '', genre: '', vente: { titre: '', compat: '', etatPiece: 'Bon état', desc: '', prix: '', tel: '', photos: [], piece: '', accepte: false, erreur: '' }, f: { prix: null, cyl: null, promo: null, stock: null }, taille: '', tailleErreur: false, produitVu: '', telCmd: null, telErreur: '', email: '', emailErreur: '', emailEnvoye: '', retour: 'compte' };
   const sauver = () => { store.set('panier', panier); store.set('client', client); store.set('commandes', commandes); store.set('favoris', favoris); store.set('annonces', annonces); store.set('vendeurs', vendeurs); };
 
   /* ---------- Outils ---------- */
@@ -96,7 +96,7 @@
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
       <img class="moto" src="img/cygnus-3.webp" alt="">
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Yamaha, Kymco, SYM et PGO révisés, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Scooters et motos de 100 à 550 cc, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
@@ -121,7 +121,7 @@
   const passeFiltres = (p) => {
     if (ui.f.prix && !p.prix) return false;
     if (ui.f.prix) { const [a, b] = ui.f.prix.split('-'); if (a && p.prix < +a) return false; if (b && p.prix >= +b) return false; }
-    if (ui.f.cyl && ![].concat(p.cylindree).includes(+ui.f.cyl)) return false;
+    if (ui.f.cyl) { const [mi, ma] = String(ui.f.cyl).split('-').map(Number); if (![].concat(p.cylindree).some((c) => c >= mi && c <= ma)) return false; }
     if (ui.f.promo && !p.ancienPrix) return false;
     if (ui.f.stock && !(p.stock > 0)) return false;
     return true;
@@ -130,6 +130,7 @@
     const q = ui.recherche.trim().toLowerCase();
     let l = tous().filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
     const rang = (p) => { const s = p.particulier && statV(p.vendeurId); return s ? (s.top ? 2 : 0) + s.moy / 10 : 0; };
+    if (!q && ui.cat === 'scooters' && ui.genre) l = l.filter((p) => (p.genre || 'scooter') === ui.genre);
     if (!q && ui.cat === 'occasion' && ui.groupe) l = l.filter((p) => p.groupe === ui.groupe);
     l = l.slice().sort((a, b) => { if (!q && ui.cat === 'occasion') { const r = rang(b) - rang(a); if (r) return r; } const x = a.prix || (ui.tri === 'asc' ? Infinity : -1), y = b.prix || (ui.tri === 'asc' ? Infinity : -1); return ui.tri === 'asc' ? x - y : y - x; });
     return { l, q };
@@ -145,7 +146,8 @@
     <div class="ligne entre"><h1 class="titre">Catalogue</h1>${rondPanier()}</div>
     <label class="champ">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" data-in="recherche" value="${esc(ui.recherche)}" placeholder="Rechercher dans le catalogue" aria-label="Rechercher dans le catalogue"></label>
     <div role="tablist" aria-label="Rayons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--card);border-radius:999px;padding:4px">
-      ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.nom}</button>`).join('')}</div>
+      ${D.categories.slice(0, 3).map((c) => `<button role="tab" class="puce" style="justify-content:center;border:none;height:40px" aria-selected="${!ui.recherche && ui.cat === c.id}" data-a="cat" data-id="${c.id}">${ic(c.icone, 18)}${c.court || c.nom}</button>`).join('')}</div>
+    ${!ui.recherche && ui.cat === 'scooters' ? `<div class="ligne" style="gap:6px">${[['', 'Tous'], ['scooter', 'Scooters'], ['moto', 'Motos']].map(([g, l]) => `<button class="puce" style="height:38px" aria-pressed="${ui.genre === g}" data-a="genre" data-id="${g}">${l}</button>`).join('')}</div>` : ''}
     <button class="puce occ" data-a="cat" data-id="occasion" aria-pressed="${!ui.recherche && ui.cat === 'occasion'}">${ic('etiquette', 18)}Occasion entre particuliers${ic('fleche', 16)}</button>
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
       ${meilleursHtml()}
@@ -513,7 +515,7 @@
       <b style="font-size:16px">${nbFiltres() ? pl(nbFiltres(), 'filtre') : 'Filtres'}</b><button data-a="fermer-feuille" style="min-height:44px;font-weight:600">Terminé</button></div>
       <div class="col" style="gap:16px">
       ${groupe('Prix (Ariary)', 'prix', tr)}
-      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [[100, '100 cc'], [110, '110 cc'], [115, '115 cc'], [125, '125 cc'], [150, '150 cc'], [155, '155 cc']]) : ''}
+      ${ui.cat === 'scooters' && !ui.recherche ? groupe('Cylindrée', 'cyl', [['100-115', '100 à 115 cc'], ['125-125', '125 cc'], ['150-200', '150 à 200 cc'], ['300-2000', '300 cc et +']]) : ''}
       ${groupe('Afficher', 'promo', [[true, 'En promotion']])}
       ${groupe('Disponibilité', 'stock', [[true, 'En stock seulement']])}
       </div><button class="btn" data-a="fermer-feuille" style="margin-top:18px">${nb ? 'Voir ' + pl(nb, 'résultat') : 'Aucun résultat'}</button>`;
@@ -604,6 +606,7 @@
     vendue(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'vendue'; if (vendeurs[x.vendeurId]) vendeurs[x.vendeurId].ventes++; sauver(); toast('Vente enregistrée : payez le vendeur ' + ar(netVendeur(x.prix))); rafraichir(); } },
     'remettre-en-vente'(id) { const x = annonces.find((y) => y.id === id); if (x) { x.etat = 'en_ligne'; delete x.commande; sauver(); toast('Pièce remise en vente'); rafraichir(); } },
     'retirer-annonce'(id) { const x = annonces.find((y) => y.id === id); if (x && (x.etat === 'attente' || x.etat === 'en_ligne')) { x.etat = 'retiree'; sauver(); toast('Annonce retirée'); rafraichir(); } },
+    genre(g) { ui.genre = g || ''; rafraichir(); },
     groupe(n) { ui.groupe = n || ''; rafraichir(); },
     'note-etoile'(v) { const [cle, n] = v.split('|'); ui.notes[cle] = Object.assign(ui.notes[cle] || { tags: [] }, { n: +n }); rafraichir(); },
     'note-tag'(v) { const [cle, t] = v.split('|'); const o = ui.notes[cle] = ui.notes[cle] || { tags: [] }; o.tags = o.tags.includes(t) ? o.tags.filter((x) => x !== t) : o.tags.concat(t); rafraichir(); },
