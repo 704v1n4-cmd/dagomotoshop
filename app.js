@@ -56,6 +56,7 @@
   const decoupe = (cle) => { const [id, taille] = cle.split('@'); return { id, taille: taille || '' }; };
   const choixDe = (p) => p.tailles ? { titre: 'Taille', aide: 'Tour de tête en cm', erreur: 'Choisissez une taille', liste: p.tailles } : p.versions ? { titre: 'Version', aide: 'Moteur et équipement', erreur: 'Choisissez une version', liste: p.versions } : null;
   const prixTxt = (p) => p.prix ? ar(p.prix) : 'Prix sur demande';
+  const prixCourt = (p) => p.prix ? ar(p.prix) : 'Sur demande';
   const waPrix = (p) => `https://wa.me/${B.whatsapp}?text=${encodeURIComponent('Bonjour, quel est le prix du ' + p.nom + (ui.taille && p.versions ? ' ' + ui.taille : '') + ' (' + p.detail + ') ?')}`;
   const stockTxt = (p) => p.stock == null ? '' : p.stock <= 0 ? 'Sur commande' : p.stock <= 2 ? `Plus que ${p.stock} en stock` : 'En stock';
   const I = window.DMS_ICONES || {};
@@ -77,7 +78,7 @@
     const resteParticuliers = part.reduce((s, l) => s + l.p.prix * l.q, 0) - acompte;
     return { lignes, sous, remise, livraison, total: sous - remise + livraison, n: lignes.reduce((s, l) => s + l.q, 0), acompte, resteParticuliers, aPart: part.length > 0 };
   }
-  const recap = (t) => `<div class="carte col recap" style="gap:7px">
+  const recap = (t) => `<div class="carte col recap" style="gap:8px">
     <div><span class="petit" style="font-size:14px">Sous-total</span><span class="nw">${ar(t.sous)}</span></div>
     <div><span class="petit" style="font-size:14px">Remise${ui.promo ? ' (' + ui.promo + ')' : ''}</span><span class="nw">${t.remise ? '- ' + ar(t.remise) : '0 Ar'}</span></div>
     <div><span class="petit" style="font-size:14px">${ui.mode === 'livraison' ? 'Livraison Tana' : 'Retrait boutique'}</span><span class="nw">${t.livraison ? ar(t.livraison) : 'Gratuit'}</span></div>
@@ -92,11 +93,11 @@
     const vedettes = D.produits.filter((p) => p.vedette);
     return `<div class="ecran">
     <div class="ligne"><img src="img/logo.jpg" alt="Dagomotoshop" style="width:46px;height:46px;border-radius:10px">
-      <div class="col" style="flex:1"><span class="petit" style="font-size:13px">Manao ahoana !</span><b style="font-size:17px;font-weight:600">${B.nom}</b></div>
+      <div class="col" style="flex:1"><span class="petit" style="font-size:13px">Manao ahoana !</span><b style="font-size:18px;font-weight:600">${B.nom}</b></div>
       <a class="rond" href="https://wa.me/${B.whatsapp}" target="_blank" rel="noopener" aria-label="Écrire à la boutique sur WhatsApp">${ic('bulle')}</a></div>
     <div class="banniere"><div class="fond"></div>
       <img class="moto" src="img/cygnus-3.webp" alt="">
-      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Scooters et motos de 100 à 550 cc, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
+      <div class="txt"><b>Roulez plus loin,<br><span>payez moins.</span></b><span class="sous">Scooters et motos de 100 à 550\u00a0cc, pièces et casques.</span><a href="#catalogue">Voir le catalogue</a></div></div>
     <form class="champ" data-form="recherche" role="search">${ic('loupe', 18, 'style="color:var(--muted)"')}<input type="search" name="q" placeholder="Scooter, pièce, casque…" aria-label="Rechercher un produit"></form>
     <div class="defile" aria-label="Rayons">${D.categories.map((c) => `<a class="puce" href="#catalogue-${c.id}">${ic(c.icone, 18)}${c.nom}</a>`).join('')}</div>
     <div class="ligne entre"><h2 class="h2">Offres du moment</h2><a href="#catalogue" class="petit ligne" style="font-size:13px;font-weight:500;gap:2px;min-height:44px">Tout voir${ic('fleche', 16)}</a></div>
@@ -110,9 +111,9 @@
   };
 
   const carteProd = (p) => `<div class="prod">
-    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : ''}
+    <a href="#produit-${p.id}" class="col" style="gap:3px"><span class="boite sq-att">${img(p)}</span>${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}${p.particulier ? '<span class="badge part">Particulier</span>' : p.occasion ? '<span class="badge part">Occasion</span>' : ''}
     <b style="font-size:14px;font-weight:600;margin-top:6px">${esc(p.nom)}</b><span class="petit">${esc(p.detail)}</span>${p.particulier ? ligneVendeur(p.vendeurId, true) : ''}</a>
-    <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixTxt(p)}</span>
+    <div class="ligne entre" style="margin-top:4px"><span class="prix">${prixCourt(p)}</span>
     ${!p.prix || p.particulier ? `<a class="ajout" href="#produit-${p.id}" aria-label="Voir ${esc(p.nom)}">${ic('fleche', 16)}</a>` : p.tailles ? `<a class="ajout" href="#produit-${p.id}" aria-label="Choisir la taille de ${esc(p.nom)}">${ic('plus', 16)}</a>` : `<button class="ajout" data-a="ajouter" data-id="${p.id}" aria-label="Ajouter ${esc(p.nom)} au panier">${ic('plus', 16)}</button>`}</div>
     ${p.stock != null && p.stock <= 2 && !p.particulier ? `<span class="stock${p.stock <= 0 ? ' rupture' : ''}">${stockTxt(p)}</span>` : ''}</div>`;
   const TRANCHES = { scooters: [['-3500000', 'Moins de 3,5 M'], ['3500000-4500000', '3,5 à 4,5 M'], ['4500000-', 'Plus de 4,5 M']],
@@ -128,7 +129,7 @@
   };
   const listeCatalogue = () => {
     const q = ui.recherche.trim().toLowerCase();
-    let l = tous().filter((p) => (q ? (p.nom + ' ' + p.detail).toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
+    let l = tous().filter((p) => (q ? (p.nom + ' ' + p.detail).replace(/\u00a0/g, ' ').toLowerCase().includes(q) : p.cat === ui.cat) && passeFiltres(p));
     const rang = (p) => { const s = p.particulier && statV(p.vendeurId); return s ? (s.top ? 2 : 0) + s.moy / 10 : 0; };
     if (!q && ui.cat === 'scooters' && ui.genre) l = l.filter((p) => (p.genre || 'scooter') === ui.genre);
     if (!q && ui.cat === 'occasion' && ui.groupe) l = l.filter((p) => p.groupe === ui.groupe);
@@ -152,7 +153,7 @@
     ${!ui.recherche && ui.cat === 'occasion' ? `<div class="carte col" style="gap:8px;padding:14px 16px"><span class="petit" style="font-size:13px;line-height:1.5">Pièces vendues <b>en l'état</b> par des particuliers. Retrait au magasin uniquement, acompte de ${Math.round(PP.acompte * 100)} % à la réservation, le reste après examen de la pièce au comptoir.</span>
       ${meilleursHtml()}
       ${famillesHtml()}
-      <span class="ligne" style="gap:14px"><a href="#vendre" class="petit" style="font-weight:600;color:var(--ink);text-decoration:underline;min-height:40px;display:flex;align-items:center">Vendre une pièce</a><a href="#conditions" class="petit" style="text-decoration:underline;min-height:40px;display:flex;align-items:center">Conditions</a></span></div>` : ''}
+      <span class="ligne" style="gap:16px"><a href="#vendre" class="petit" style="font-weight:600;color:var(--ink);text-decoration:underline;min-height:40px;display:flex;align-items:center">Vendre une pièce</a><a href="#conditions" class="petit" style="text-decoration:underline;min-height:40px;display:flex;align-items:center">Conditions</a></span></div>` : ''}
     ${ui.recherche || ui.cat === 'occasion' ? '' : `<div class="defile" aria-label="Recherches suggérées"><span class="petit nw" style="align-self:center;flex-shrink:0">${recentes.length ? 'Récentes :' : 'Populaires :'}</span>${(recentes.length ? recentes : ['Cygnus', 'G6', 'GP', 'SYM Jet', 'VJR', 'PGO']).map((r) => `<button class="puce" style="height:34px" data-a="suggestion" data-id="${esc(r)}">${esc(r)}</button>`).join('')}</div>`}
     <div class="ligne entre"><button class="puce" data-a="filtres" aria-haspopup="dialog" style="${nbFiltres() ? 'background:var(--sel);color:var(--sel-txt);border-color:var(--sel)' : ''}">${ic('filtres', 18)}Filtres${nbFiltres() ? ` · ${nbFiltres()}` : ''}</button>
       <label class="sr" for="tri">Trier par</label><select id="tri" data-in="tri" style="height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:14px">
@@ -164,7 +165,7 @@
     const l = tous().filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
     if (!l.length) return '';
     return `<div class="col" style="gap:8px"><div class="ligne entre"><h2 class="h2" style="font-size:15px">Vous aimerez aussi</h2><a href="#catalogue-${p.cat}" class="petit" style="font-size:13px;min-height:40px;display:flex;align-items:center">Tout voir</a></div>
-      <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${prixTxt(x)}</span></a>`).join('')}</div></div>`;
+      <div class="defile" style="gap:10px">${l.map((x) => `<a href="#produit-${x.id}" class="mini"><span class="boite sq-att">${img(x)}</span><b>${esc(x.nom)}</b><span class="prix">${prixCourt(x)}</span></a>`).join('')}</div></div>`;
   };
   V.produit = (id) => {
     const p = produit(id);
@@ -183,7 +184,7 @@
       <div class="points" aria-hidden="true">${p.photos.map((_, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div><span class="compte" aria-live="polite">1/${p.photos.length}</span>` : img(p, 'hero-img')}
     <div class="dessus">
       <div class="carte col" style="gap:6px;padding-top:${p.rond ? 30 : 46}px">
-        <h1 class="h2" style="font-size:21px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
+        <h1 class="h2" style="font-size:22px">${esc(p.nom)}</h1><span class="petit" style="font-size:13px">${esc(p.detail)}</span>
         <div class="ligne" style="gap:8px;flex-wrap:wrap"><span class="prix" style="font-size:22px;font-weight:600">${prixTxt(p)}</span>
         ${p.ancienPrix ? `<span class="barre" style="font-size:13px">${grp(p.ancienPrix)}</span><span class="badge" style="background:var(--lime-soft);color:var(--ok)">-${grp(eco)} Ar</span>` : ''}</div>
         <span class="petit">${p.particulier ? `soit ${fmg(p.prix)} · acompte de ${ar(acompteDe(p.prix))} à la réservation, le reste au retrait` : p.prix ? `soit ${fmg(p.prix)} · paiement MVola, Orange Money ou espèces` : 'Écrivez-nous pour le prix, l\u2019année et le kilométrage.'}</span>${p.photoProvisoire ? '<span class="petit" style="font-style:italic">Photo non contractuelle</span>' : ''}
@@ -207,9 +208,9 @@
 
   V.panier = () => {
     const t = totaux();
-    const tete = entete(`Mon panier <span class="petit" style="font-size:17px">(${t.n})</span>`, 'catalogue', t.n ? '<button data-a="vider" style="height:44px;padding:0 4px;font-size:13px;font-weight:500;color:var(--muted)">Vider</button>' : '');
+    const tete = entete(`Mon panier <span class="petit" style="font-size:18px">(${t.n})</span>`, 'catalogue', t.n ? '<button data-a="vider" style="height:44px;padding:0 4px;font-size:13px;font-weight:500;color:var(--muted)">Vider</button>' : '');
     if (!t.n) return `<div class="ecran">${tete}<div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('panier', 28)}</span>
-      <b style="font-size:17px">Votre panier est vide</b><span class="petit" style="font-size:13px">Parcourez les scooters, pièces et casques du catalogue.</span>
+      <b style="font-size:18px">Votre panier est vide</b><span class="petit" style="font-size:13px">Parcourez les scooters, pièces et casques du catalogue.</span>
       <a href="#catalogue" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Voir le catalogue</a></div></div>`;
     return `<div class="ecran">${tete}
     <div class="carte" style="padding:4px 14px">${t.lignes.map(({ cle, p, q, taille }) => `<div class="article">
@@ -238,7 +239,7 @@
       <p style="position:relative;color:var(--fort-txt);font-weight:700;font-size:22px;line-height:1.2;max-width:210px;margin:12px 0 0">${ui.retour === 'paiement' ? 'Plus qu’une étape avant votre <span class="surl">réservation.</span>' : 'Retrouvez vos <span class="surl">commandes.</span>'}</p></div>
     <img src="img/scooter.webp" alt="" style="position:absolute;z-index:3;right:-26px;top:calc(100px + env(safe-area-inset-top));width:176px;filter:drop-shadow(0 14px 14px rgba(0,0,0,.45))">
     <div class="dessus" style="gap:12px;padding-top:22px">
-      <div class="col" style="gap:4px"><h1 class="h2" style="font-size:20px">Connectez-vous</h1><span class="petit" style="font-size:13px">En un clic, sans mot de passe.</span></div>
+      <div class="col" style="gap:4px"><h1 class="h2" style="font-size:22px">Connectez-vous</h1><span class="petit" style="font-size:13px">En un clic, sans mot de passe.</span></div>
       <button class="btn fb" data-a="cnx" data-id="facebook">${LOGO_FB}Continuer avec Facebook</button>
       <button class="btn clair google" data-a="cnx" data-id="google">${LOGO_G}Continuer avec Google</button>
       <div class="ou"><span>ou par e-mail</span></div>
@@ -285,12 +286,12 @@
     return `<div class="ecran" style="padding-top:calc(40px + env(safe-area-inset-top))">
     <div class="col" style="align-items:center;text-align:center;gap:8px">
       <span style="width:96px;height:96px;border-radius:50%;background:var(--lime);color:var(--on-lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 12px var(--lime-soft);margin:12px 0 10px">${ic('check', 44, 'stroke-width="2.6"')}</span>
-      <h1 class="titre" style="font-size:26px">Réservation confirmée !</h1>
+      <h1 class="titre" style="font-size:28px">Réservation confirmée !</h1>
       <p class="petit" style="font-size:14px;margin:0;max-width:300px">Nous préparons votre commande et vous appelons au +261 ${esc(c.tel)} dès qu'elle est prête.</p></div>
     <div class="carte ligne entre" style="background:var(--noir);color:var(--noir-txt);border-radius:22px">
       <div class="col"><span class="petit" style="color:var(--noir-mut)">Code de retrait à présenter en boutique</span><b style="font-size:28px;font-weight:800;letter-spacing:2px;color:var(--lime)">${esc(c.code)}</b></div>
       <button class="rond" style="background:rgba(255,255,255,.12);color:var(--noir-txt)" data-a="copier" data-id="${esc(c.code)}" aria-label="Copier le code">${ic('copie', 18)}</button></div>
-    <div class="carte col" style="gap:9px;font-size:13px">
+    <div class="carte col" style="gap:8px;font-size:13px">
       <div class="ligne" style="gap:10px">${ic('panier', 18)}<span>${pl(c.lignes.reduce((s, l) => s + l.q, 0), 'article')} · <b class="nw">${ar(c.total)}</b></span></div>
       <div class="ligne" style="gap:10px">${ic(c.mode === 'livraison' ? 'pin' : 'sac', 18)}<span>${c.mode === 'livraison' ? 'Livraison à Tana sous 48 h' : `Retrait chez ${B.nom} · ${esc(B.delaiRetrait)}`}</span></div>
       <div class="ligne" style="gap:10px">${ic('carte', 18)}<span>${{ mvola: 'MVola', orange: 'Orange Money', especes: 'Espèces à la boutique' }[c.paiement]}</span></div>
@@ -303,7 +304,7 @@
     if (!c) return V.introuvable();
     const s = c.statut;
     return `<div class="ecran">${entete('Commande ' + esc(c.code), 'compte')}
-    <div class="carte col" style="gap:14px"><h2 class="h2" style="font-size:20px">${s >= 3 ? 'Bonne route !' : 'Presque fini !'}</h2>
+    <div class="carte col" style="gap:16px"><h2 class="h2" style="font-size:22px">${s >= 3 ? 'Bonne route !' : 'Presque fini !'}</h2>
       <div class="etapes"><span class="rail"></span><span class="plein" style="width:${s * 25}%"></span>
       ${ETAPES.map(([l, i], k) => `<div class="etape ${k < s || s === 3 ? 'fait' : k === s ? 'encours' : ''}"><i>${ic(i)}</i>${l}</div>`).join('')}</div>
       <div class="ligne" style="background:var(--bg);border-radius:14px;padding:12px">${ic('horloge', 22)}<span style="font-size:13px">${MSG[s]}</span></div></div>
@@ -316,12 +317,12 @@
 
   V.compte = () => {
     if (!client) { return `<div class="ecran"><h1 class="titre">Mon compte</h1>
-      <div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('user', 28)}</span><b style="font-size:17px">Connectez-vous</b>
+      <div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('user', 28)}</span><b style="font-size:18px">Connectez-vous</b>
       <span class="petit" style="font-size:13px">Avec Facebook, Google ou votre e-mail, pour suivre vos commandes et votre carte fidélité.</span>
       <button class="btn" data-a="aller-connexion" style="margin-top:6px">Se connecter</button></div>${menuCompte()}</div>`; }
     const n = commandes.length, f = n % 5;
     return `<div class="ecran"><h1 class="titre">Mon compte</h1>
-    <div class="carte col" style="background:var(--noir);color:var(--noir-txt);border-radius:22px;gap:14px">
+    <div class="carte col" style="background:var(--noir);color:var(--noir-txt);border-radius:22px;gap:16px">
       <div class="ligne"><span class="rond lime" style="width:52px;height:52px;font-weight:700">${ic('user', 22)}</span>
         <div class="col" style="flex:1"><b style="font-weight:600;font-size:16px">${esc(client.nom || 'Mon compte')}</b><span class="petit" style="color:var(--noir-mut)">${{ facebook: 'Connecté avec Facebook', google: 'Connecté avec Google', email: 'Connecté par e-mail' }[client.methode] || ''}${client.tel ? ' · +261 ' + esc(client.tel) : ''} · ${pl(n, 'commande')}</span></div></div>
       <div class="col" style="gap:8px"><div class="ligne entre" style="font-size:13px"><b style="font-weight:600">Carte fidélité</b><span style="color:var(--noir-mut)"><b style="color:var(--lime)">${f}</b> achat${f > 1 ? 's' : ''} sur 5</span></div>
@@ -372,7 +373,7 @@
       <p class="petit ligne" style="margin:0;gap:8px;align-items:flex-start">${ic('bouclier', 16, 'style="flex-shrink:0;margin-top:1px"')}Pièces uniquement (pas de moto ni de scooter). Votre nom et votre numéro ne sont jamais montrés à l’acheteur.</p></div>
     <div class="carte col" style="gap:10px"><h2 class="h2" style="font-size:16px">Guide photo</h2>
       <p class="petit" style="margin:0">Pour toutes les photos : en plein jour, sans flash, pièce posée sur un fond uni et clair. Pas d’image trouvée sur internet.</p></div>
-    <form data-form="vendre" class="col" style="gap:14px" novalidate>
+    <form data-form="vendre" class="col" style="gap:16px" novalidate>
       <div class="col" style="gap:8px"><div class="ligne entre"><b style="font-size:15px;font-weight:600">Photos de la pièce</b><span class="petit" role="status">${v.photos.filter(Boolean).length}/5 · minimum 3</span></div>
       <div class="emplacements">${EMPLACEMENTS.map(([t, d, i], k) => v.photos[k]
         ? `<div class="emplacement plein"><img src="${v.photos[k]}" alt="${t}"><span class="etiq">${k + 1}. ${t}</span><button type="button" class="rond" data-a="photo-suppr" data-id="${k}" aria-label="Supprimer la photo ${k + 1}">${ic('moins', 16)}</button></div>`
@@ -408,7 +409,7 @@
       <span class="petit">Prix ${ar(x.prix)} · vous recevrez <b style="color:var(--ink)">${ar(netVendeur(x.prix))}</b></span><span style="margin-top:4px">${badgeStatut(x)}</span></div></div>
       <p class="petit" style="margin:0;font-size:13px">${x.etat === 'reservee' ? `Un acheteur a réservé cette pièce. Déposez-la au magasin avant <b style="color:var(--ink)">${limiteDepot(x)}</b>, sinon la réservation est annulée.` : x.etat === 'vendue' ? `Vendue : ${ar(netVendeur(x.prix))} versés par la boutique.` : STATUTS[x.etat][1]}</p>
       ${x.etat === 'attente' || x.etat === 'en_ligne' ? `<button class="btn clair" style="height:44px" data-a="retirer-annonce" data-id="${x.id}">Retirer l’annonce</button>` : ''}</div>`).join('')
-      : `<div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('etiquette', 28)}</span><b style="font-size:17px">Aucune annonce</b><span class="petit" style="font-size:13px">Vendez vos pièces en trop : la boutique s’occupe de l’acheteur.</span><a href="#vendre" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Vendre une pièce</a></div>`}</div>`;
+      : `<div class="carte col vide"><span class="rond" style="width:64px;height:64px;background:var(--lime-soft)">${ic('etiquette', 28)}</span><b style="font-size:18px">Aucune annonce</b><span class="petit" style="font-size:13px">Vendez vos pièces en trop : la boutique s’occupe de l’acheteur.</span><a href="#vendre" class="btn" style="width:auto;padding:0 22px;height:48px;margin-top:6px">Vendre une pièce</a></div>`}</div>`;
   };
 
   V.validation = () => {
@@ -503,7 +504,7 @@
     $feuille.classList.remove('vu'); $feuille.innerHTML = ''; feuilleType = ''; document.body.style.overflow = '';
     if (feuilleAvant && document.contains(feuilleAvant)) feuilleAvant.focus({ preventScroll: true });
   }
-  const feuilleAjout = (p, taille) => `<div class="ligne" style="gap:14px"><span class="vign" style="width:72px;height:72px">${img(p)}</span>
+  const feuilleAjout = (p, taille) => `<div class="ligne" style="gap:16px"><span class="vign" style="width:72px;height:72px">${img(p)}</span>
       <div class="col" style="flex:1"><span class="ligne petit" style="gap:6px;color:var(--ok);font-weight:600">${ic('check', 16)}Ajouté au panier</span><b style="font-size:16px;font-weight:600">${esc(p.nom)}${taille ? ' · ' + esc(taille) : ''}</b><span class="prix">${prixTxt(p)}</span></div></div>
     <div class="ligne entre petit" style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:13px"><span>Panier : ${pl(nbPanier(), 'article')}</span><b class="nw" style="color:var(--ink)">${ar(totaux().total)}</b></div>
     <div class="col" style="gap:10px"><a class="btn" href="#panier" data-a="voir-panier">Voir le panier</a><button class="btn clair" data-a="fermer-feuille">Continuer mes achats</button></div>`;
